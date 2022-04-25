@@ -1,0 +1,4 @@
+<launch>
+  <include file="$(find raspbot_ydlidar)/launch/ydlidar.launch" />
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find bot_ydlidar)/rviz/view_ydlidar.rviz" />
+</launch>
