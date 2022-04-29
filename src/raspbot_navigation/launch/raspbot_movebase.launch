@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+
+<launch>
+  <node pkg="move_base" type="move_base" name="move_base" output="screen" >
+    <!-- planner -->
+    <rosparam file="$(find bot_navigation)/config/move_base_params.yaml" command="load"   />
+    <rosparam file="$(find bot_navigation)/config/dwa_local_planner_params.yaml" command="load"   />
+    <rosparam file="$(find bot_navigation)/config/global_planner_params.yaml" command="load"   />
+    <!-- costmap -->
+    <rosparam file="$(find bot_navigation)/config/costmap_common_params.yaml" command="load"  ns="global_costmap" />
+    <rosparam file="$(find bot_navigation)/config/costmap_common_params.yaml" command="load"  ns="local_costmap" />
+    <rosparam file="$(find bot_navigation)/config/local_costmap_params.yaml" command="load"   />
+    <rosparam file="$(find bot_navigation)/config/global_costmap_params.yaml" command="load"   />
+    <!-- <remap from="/cmd_vel" to="/cmd_vel"/> -->
+  </node>
+
+
+
+</launch>

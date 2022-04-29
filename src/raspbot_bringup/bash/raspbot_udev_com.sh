@@ -1,7 +1,9 @@
 #!/bin/bash
 
+echo "----------serial port(ttyUSBX) list-----------------"
 lsusb
-ls -l /dev/ttyUSB*
+
+echo "----------serial port(ttyUSBX) authority-----------------"
 # udevadm info --attribute-walk --name=/dev/ttyUSB0
 
 echo  'KERNEL=="ttyUSB*", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="7523", MODE:="0777", GROUP:="dialout",  SYMLINK+="raspbot_com_port"' >/etc/udev/rules.d/raspbot_com_port.rules
@@ -12,4 +14,6 @@ sleep 2
 service udev restart
 echo "udev restart sucessed"
 
+sleep 2
+echo "----------serial port(ttyUSBX) authority-----------------"
 ls -l /dev |grep ttyUSB

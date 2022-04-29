@@ -2,7 +2,7 @@
 <package format="2">
   <name>raspbot_bringup</name>
   <version>0.0.0</version>
-  <description>The RaspBot_bringup package</description>
+  <description>The raspbot_bringup package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
