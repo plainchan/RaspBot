@@ -4,8 +4,8 @@
     <arg name="scan_topic" default="scan"/>
     <arg name="base_frame" default="base_link"/>
     <arg name="odom_frame" default="odom"/>
-    <arg name="map_size" default="2048"/> 
-    <arg name="pub_map_odom_transform" default="false"/>    <!-- false,use wheel odom-->
+    <arg name="map_size" default="1000"/> 
+    <arg name="pub_map_odom_transform" default="true"/>    <!-- false,use wheel odom-->
     <arg name="scan_subscriber_queue_size" default="5"/>
     <arg name="tf_map_scanmatch_transform_frame_name" default="scanmatcher_frame"/>
     <arg name="pub_map_scanmatch_transform" default="false" />
@@ -37,9 +37,9 @@
 
         <!-- laser parameters -->
         <param name="laser_min_dist" value="0.1"/>
-        <param name="laser_max_dist" value="100"/>
-        <param name="laser_z_min_value" value="-0.9"/>
-        <param name="laser_z_max_value" value="1.5"/>
+        <param name="laser_max_dist" value="12"/>
+        <param name="laser_z_min_value" value="-1"/>
+        <param name="laser_z_max_value" value="0.5"/>
 
         <!-- Advertising config --> 
         <param name="advertise_map_service" value="true"/>
@@ -61,13 +61,8 @@
     </node>
     
     <!-- publish map to odom transform -->
-    <!-- <node pkg="tf" type="static_transform_publisher" name="odom_baselink_broadcaster" args="0 0 0 0 0 0 odom  base_link   100"/> -->
- 
-
-    
-    <!-- run rviz -->
-    <node pkg="rviz" type="rviz" name="rviz" args="-d  $(find bot_navigation)/rviz/view_map.rviz" />
-
+    <node pkg="tf" type="static_transform_publisher" name="odom_baselink_broadcaster" args="0 0 0 0 0 0 odom  base_link   100"/>
+    <node pkg="tf" type="static_transform_publisher" name="baselink_lidar_broadcaster" args="0 0 1 0 0 0 base_link lidar_link   100"/>
 
 </launch>
 

@@ -1,23 +1,20 @@
 <?xml version="1.0" ?>
 
 <launch>
-    <arg name="map_file" default="$(find bot_navigation)/maps/map.yaml" />
-    <arg name="use_rslidar" default="true" />
+    <arg name="map_file" default="$(find raspbot_navigation)/maps/map.yaml" />
+    <arg name="use_rplidar" default="true" />
 
     <!-- start  Lidar scan -->
-    <!-- <include if="$(arg use_rslidar)" file="$(find bot_navigation)/launch/bot_points2laser.launch" />
-    <include unless="$(arg use_rslidar)" file="$(find bot_ydlidar)/launch/ydlidar.launch" /> -->
+    <include if="$(arg use_rplidar)" file="$(find raspbot_navigation)/launch/rplidar.launch" /> -->
+    <include unless="$(arg use_rplidar)" file="$(find raspbot_navigation)/launch/ydlidar.launch" />
     
-    <!-- map_server load map's data -->
-    <!-- <node pkg="map_server" type="map_server" name="map_server"  args="$(arg map_file)" /> -->
+    <!-- map_server load map's data --> 
+    <node pkg="map_server" type="map_server" name="map_server"  args="$(arg map_file)" />
 
     <!-- AMCL -->
-    <include file="$(find bot_navigation)/launch/bot_amcl.launch" />
+    <include file="$(find raspbot_navigation)/launch/raspbot_amcl.launch" />
     <!-- move_base -->
-    <include file="$(find bot_navigation)/launch/bot_movebase.launch" />
-
-    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find bot_navigation)/rviz/bot_navi.rviz" />
-
+    <include file="$(find raspbot_navigation)/launch/raspbot_movebase.launch" />
 
     <!-- <node pkg="tf" type="static_transform_publisher" name="footprint_baselink_broadcaster" args="0 0 0.142 0 0 0 base_footprint base_link  100"/>
     <node pkg="tf" type="static_transform_publisher" name="baselink_lidar_broadcaster" args="0.249 0 0.90 0 0 0 base_link lidar_frame  100"/> -->
