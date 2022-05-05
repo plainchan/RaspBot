@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+
+<launch>
+
+    <include file="$(find raspbot_bringup)/launch/raspbot_minimal.launch" >
+
+
+    </include>
+
+
+</launch>

@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+
+<launch>
+
+    <args name="base_frame"       default="base_link"/>
+    <node pkg="raspbot_bringup" type="raspbot_bringup_node" name="raspbot_bringup">
+
+
+    </node>
+
+
+</launch>
