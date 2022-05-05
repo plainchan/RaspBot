@@ -11,7 +11,7 @@ namespace raspbot
 
         nhPrivate_.param<std::string>("base_frame",base_frame,"base_link");
         nhPrivate_.param<std::string>("odom_frame",odom_frame,"odom");
-        nhPrivate_.param<std::string>("udev_port",udev_port,"raspbot_com_port");
+        nhPrivate_.param<std::string>("udev_port",udev_port,"/dev/raspbot_com_port");
         nhPrivate_.param<int>("baud",baud,115200);
 
         serial_init();
@@ -25,11 +25,18 @@ namespace raspbot
     {
         sp.setPort(udev_port);
         sp.setBaudrate(baud);
+        sp.setBytesize(serial::eightbits);
+        sp.setParity(serial::parity_none);
+        sp.setStopbits(serial::stopbits_one);
+        sp.setFlowcontrol(serial::flowcontrol_none);
+        auto timeout = serial::Timeout::simpleTimeout(500);
+        sp.setTimeout(timeout);
+
         try
         {
             sp.open();
         }
-        catch(serial::PortNotOpenedException& e)
+        catch(serial::IOException& e)
         {
             ROS_ERROR_STREAM(e.what());
             return -1;
@@ -55,6 +62,7 @@ namespace raspbot
             r.sleep();
             ros::spinOnce;
         }
+        sp.close();
     }
 
 

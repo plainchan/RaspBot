@@ -3,7 +3,7 @@
 <launch>
     <arg name="base_frame"       default="base_link"/>
     <arg name="odom_frame"       default="odom"/>
-    <arg name="udev_port"        default="raspbot_com_port"/>
+    <arg name="udev_port"        default="/dev/raspbot_com_port"/>
     <arg name="baud"             default="115200"/>
     <include file="$(find raspbot_bringup)/launch/raspbot_minimal.launch" >
         <arg name="base_frame"       value="$(arg base_frame)"/>
