@@ -1,10 +1,15 @@
 <?xml version="1.0"?>
 
 <launch>
-
+    <arg name="base_frame"       default="base_link"/>
+    <arg name="odom_frame"       default="odom"/>
+    <arg name="udev_port"        default="raspbot_com_port"/>
+    <arg name="baud"             default="115200"/>
     <include file="$(find raspbot_bringup)/launch/raspbot_minimal.launch" >
-
-
+        <arg name="base_frame"       value="$(arg base_frame)"/>
+        <arg name="odom_frame"       value="$(arg odom_frame)"/>
+        <arg name="udev_port"        value="$(arg udev_port)"/>
+        <arg name="baud"             value="$(arg baud)"/>
     </include>
 
 
