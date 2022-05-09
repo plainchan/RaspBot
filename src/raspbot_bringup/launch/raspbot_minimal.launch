@@ -4,14 +4,16 @@
     <!-- params -->
     <arg name="base_frame"       default="base_link"/>
     <arg name="odom_frame"       default="odom"/>
-    <arg name="udev_port"        default="raspbot_com_port"/>
+    <arg name="udev_port"        default="/dev/raspbot_com_port"/>
     <arg name="baud"             default="115200"/>
+    <arg name="frequency"        default="50.0" />   <!-- Receive date interval -->
     <!-- launch node -->
     <node pkg="raspbot_bringup"  type="raspbot_bringup_node" name="raspbot_bringup" output="screen">
-        <param name="base_frame" type="string"     value="$(arg base_frame)"/>
-        <param name="odom_frame" type="string"     value="$(arg odom_frame)"/>
-        <param name="udev_port"  type="string"     value="$(arg udev_port)"/>
-        <param name="baud"       type="int"        value="$(arg baud)"/>
+        <param name="base_frame"      type="string"        value="$(arg base_frame)"/>
+        <param name="odom_frame"      type="string"        value="$(arg odom_frame)"/>
+        <param name="udev_port"       type="string"        value="$(arg udev_port)"/>
+        <param name="baud"            type="int"           value="$(arg baud)"/>
+        <param name="frequency"       type="int"           value="$(arg baud)"/>
     </node>
 
 

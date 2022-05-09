@@ -125,7 +125,6 @@ include
 ## Declare a C++ library
 add_library(raspbot_base
   src/raspbot_base.cpp
-  src/raspbot_comm.cpp
 )
 
 ## Add cmake target dependencies of the library
