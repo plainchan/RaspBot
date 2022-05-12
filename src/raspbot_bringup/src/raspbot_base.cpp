@@ -1,5 +1,5 @@
 #include "raspbot_bringup/raspbot_base.h"
-#include "raspbot_bringup/raspbot_comm.h"
+#include "raspbot_bringup/raspbot_comm.hpp"
 
 namespace raspbot
 {
@@ -107,19 +107,20 @@ namespace raspbot
 
     void BotBase::speedTwistCallBack(const geometry_msgs::Twist::ConstPtr &msg_ptr)
     {
-        Speed_msgs speed;
-        speed.header1 = Header1;
-        speed.header2 = Header2;
-        speed.data_tag = speed_tag;
-        speed.length = frame_speed_len;
-        speed.velocity = (int16_t)(msg_ptr->linear.x*1000);
-        speed.yaw =(int16_t)(msg_ptr->angular.z*1000);
+        Frame_Speed_msgs frame;
+        frame.header[0] = Header1;
+        frame.header[1] = Header2;
+        frame.len = 5;
+        frame.crc = 0;
+        frame.speed.data_tag = speed_tag;
+        frame.speed.velocity = (int16_t)(msg_ptr->linear.x*1000);
+        frame.speed.yaw =(int16_t)(msg_ptr->angular.z*1000);
         
-        std::vector<uint8_t> Bytes = structPack_Bytes<Speed_msgs>(speed);
+        std::vector<uint8_t> Bytes = structPack_Bytes<Frame_msgs>(frame);
         // ROS_INFO("%x",Bytes[0]);
         // ROS_INFO("%x",Bytes[1]);
-        // ROS_INFO("%d",(short)Bytes[5]<<8 | (short)Bytes[4]);
-        // ROS_INFO("%d",(short)Bytes[7]<<8 | (short)Bytes[6]);
+        // ROS_INFO("%d",(short)Bytes[7]<<8 | Bytes[6]);
+        // ROS_INFO("%d",(short)Bytes[9]<<8 | Bytes[8]);
         sp_.write(Bytes);
  
     }
