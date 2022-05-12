@@ -5,8 +5,10 @@
 #include <vector>
 #include <cstring>
 
-#define Header1                  0xFF
-#define Header2                  0xEE
+#define MAX_BUFF_SIZE  0xFA               //250
+
+#define Header1                  0xFE
+#define Header2                  0xEF
 #define speed_tag                0xA0
 #define frame_speed_len          0x04
 

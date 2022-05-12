@@ -1,5 +1,5 @@
 #include "raspbot_bringup/raspbot_base.h"
-#include "raspbot_bringup/raspbot_comm.hpp"
+#include "raspbot_bringup/raspbot_comm.h"
 
 namespace raspbot
 {
@@ -17,7 +17,7 @@ namespace raspbot
     }
     BotBase::~BotBase()
     {
-
+        sp_.close();
     }
     
     void BotBase::initialize()
@@ -70,11 +70,11 @@ namespace raspbot
 
         if(sp_.isOpen())
         {
-            //print port information
+            //echo port status
             ROS_INFO_STREAM("serial port opened succeed");
- 
-            ROS_INFO_STREAM(sp_.getPort());
-            ROS_INFO_STREAM(sp_.getBaudrate());
+            //print port information
+            ROS_INFO_STREAM("port:" << sp_.getPort());
+            ROS_INFO_STREAM("baud:"<< sp_.getBaudrate());
 
             return true;
         }
@@ -86,6 +86,22 @@ namespace raspbot
     }
     void BotBase::periodicUpdate(const ros::TimerEvent &event)
     {
+
+        //read and process serial buff
+        size_t buff_size = sp_.available();
+        if(buff_size)
+        {
+            uint8_t RxBuff[MAX_BUFF_SIZE];
+
+            if(buff_size>MAX_BUFF_SIZE)
+                buff_size = MAX_BUFF_SIZE;
+
+            buff_size = sp_.read(RxBuff,buff_size);
+            for(int i=0;i<buff_size;++i)
+            {
+
+            }
+        }
 
     }
 
@@ -100,10 +116,10 @@ namespace raspbot
         speed.yaw =(int16_t)(msg_ptr->angular.z*1000);
         
         std::vector<uint8_t> Bytes = structPack_Bytes<Speed_msgs>(speed);
-        ROS_INFO("%x",Bytes[0]);
-        ROS_INFO("%x",Bytes[1]);
-        ROS_INFO("%d",(short)Bytes[5]<<8 | (short)Bytes[4]);
-        ROS_INFO("%d",(short)Bytes[7]<<8 | (short)Bytes[6]);
+        // ROS_INFO("%x",Bytes[0]);
+        // ROS_INFO("%x",Bytes[1]);
+        // ROS_INFO("%d",(short)Bytes[5]<<8 | (short)Bytes[4]);
+        // ROS_INFO("%d",(short)Bytes[7]<<8 | (short)Bytes[6]);
         sp_.write(Bytes);
  
     }
