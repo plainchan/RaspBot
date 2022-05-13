@@ -68,8 +68,10 @@ typedef struct
 
 typedef struct 
 {
-    uint8_t      len;
-    Robot_msgs robot_msgs;
+    uint8_t        header[2];
+    uint8_t        len;
+    uint16_t       crc;
+    Robot_msgs     robot_msgs;
 }Frame_Robot_msgs;
 
 /*****************************************************************************/
@@ -86,6 +88,11 @@ typedef struct
     uint8_t      header[2];
     uint8_t      len;
     uint16_t     crc;
+
+
+
+
+    
     Speed_msgs   speed;
 }Frame_Speed_msgs;
 #pragma pack()  //结束字节对齐

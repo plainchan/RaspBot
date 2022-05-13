@@ -61,10 +61,12 @@ namespace raspbot
         {
             sp_.open();
         }
-        catch(serial::PortNotOpenedException& e)
+        catch(serial::IOException& e)
         {
-            ROS_INFO_STREAM("failed to open port");
+            ROS_INFO_STREAM("failed to open port:"<< sp_.getPort());
             ROS_ERROR_STREAM(e.what());
+            sp_.close();
+            ros::requestShutdown();
             return false;
         }
 
@@ -116,7 +118,7 @@ namespace raspbot
         frame.speed.velocity = (int16_t)(msg_ptr->linear.x*1000);
         frame.speed.yaw =(int16_t)(msg_ptr->angular.z*1000);
         
-        std::vector<uint8_t> Bytes = structPack_Bytes<Frame_msgs>(frame);
+        std::vector<uint8_t> Bytes = structPack_Bytes<Frame_Speed_msgs>(frame);
         // ROS_INFO("%x",Bytes[0]);
         // ROS_INFO("%x",Bytes[1]);
         // ROS_INFO("%d",(short)Bytes[7]<<8 | Bytes[6]);
