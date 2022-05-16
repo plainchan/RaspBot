@@ -13,34 +13,46 @@
 *  CRC  .........  cyclic redundancy check                                              *
 *  DPKG .........  data package,include DATA_TAG,DATA                                   *                               
 *                                                                                       *
-*  ,--------------+---------+                                                           *
-*  |    Type      |  size   |                                                           *
-*  ,--------------+---------+                                                           *
-*  | frame  head1 | 1 BYTE  |                                                           *
-*  ,--------------+---------+                                                           *
-*  | frame  head2 | 1 BYTE  |                                                           *
-*  ,--------------+---------+                                                           *
-*  | LEN          | 1 BYTE  |                                                           *
-*  ,--------------+---------+                                                           *
-*  | CRC          | 2 BYTES |                                                           *
-*  ,--------------+---------+                                                           *
-*  | DATA_TAG     | 1 BYTE  |                                                           *
-*  ,--------------+---------+                                                           *
-*  | DATA         | n BYTES |                                                           *
-*  ---------------+---------+                                                           *
-*  | DATA_TAG     | 1 BYTE  |                                                           *
-*  ,--------------+---------+                                                           *
-*  | DATA         | n BYTES |                                                           *
-*  ---------------+---------+                                                           *
+*  ,------+--------------+---------+---------+                                          *
+*  |      |    Type      |  size   |  offset |                                          *
+*  ,------,--------------+---------+---------+                                          *
+*  |      | frame  head1 | 1 BYTE  |    0    |                                          *
+*  | SOF  ,--------------+---------+---------+                                          *
+*  |      | frame  head2 | 1 BYTE  |    1    |                                          *
+*  ,------,--------------+---------+---------+                                          *
+*  | LEN  |              | 1 BYTE  |    2    |                                          *
+*  ,------,--------------+---------+---------+                                          *
+*  | CRC  |              | 2 BYTES |    3    |                                          *
+*  ,------,--------------+---------+---------+                                          *
+*  |      | DATA_TAG     | 1 BYTE  |    5    |                                          *
+*  | DPKG ,--------------+---------+---------+                                          *
+*  |      | DATA         | n BYTES |    6+n  |                                          *
+*  ,---------------------+---------+---------+                                          *
+*  |      | DATA_TAG     | 1 BYTE  |    7    |                                          *
+*  | DPKG ,--------------+---------+---------+                                          *
+*  |      | DATA         | m BYTES |   7+m   |                                          *
+*  ----------------------+---------+---------+                                          *
 *                                                                                       *
-*                                                                                       *
+*  Endian: Little-Endian                                                                *
 *****************************************************************************************/
 
 #include <cstdint>
 #include <vector>
 #include <cstring>
 
-#define MAX_BUFF_SIZE  0xFA               //250
+/**
+ * 串口传输缓冲区最大大小
+ * 
+ */
+#define MAX_RxBUFF_SIZE   0x01FE                   //510
+
+/**
+ *  帧缓冲区最大大小
+ * 
+ */
+#define MAX_BUFF_SIZE      0xFF                             //255
+#define FRAME_INFO_SIZE    0x05                             //5  非数据域
+#define MAX_DPKG_SIZE    (MAX_BUFF_SIZE-FRAME_INFO_SIZE)    //250
 
 #define Header1                  0xFE
 #define Header2                  0xEF
@@ -48,33 +60,60 @@
 #define robot_tag                0xA0
 #define speed_tag                0xB0
 
+typedef union 
+{
+    float   number;
+    uint8_t bytes[4];
+}Bytes2Float;
+
+typedef union 
+{
+    uint16_t   number;
+    uint8_t    bytes[2];
+}Bytes2U16;
+typedef union 
+{
+    int16_t    number;
+    uint8_t    bytes[2];
+}Bytes2INT16;
+typedef union 
+{
+    uint32_t   number;
+    uint8_t    bytes[4];
+}Bytes2U32;
 
 /**
  * @brief status of robot 
- *        
+ *         
  * 
  */
 typedef struct 
 {
     int8_t     data_tag;
-    uint8_t    voltage;                 //real voltage = voltage/10
-    uint16_t   l_encoder_pulse;
-    uint16_t   r_encoder_pulse;
+    float      voltage;                 //real voltage = voltage/10
+    int16_t    l_encoder_pulse;
+    int16_t    r_encoder_pulse;
     float      acc[3];
     float      gyr[3];
     float      mag[3];
     float      elu[3];
 }Robot_msgs;
 
-typedef struct 
+typedef struct receiveStream
 {
-    uint8_t        header[2];
     uint8_t        len;
     uint16_t       crc;
-    Robot_msgs     robot_msgs;
-}Frame_Robot_msgs;
 
-/*****************************************************************************/
+    uint8_t        stream_buff[MAX_BUFF_SIZE];
+    Robot_msgs     robot_msgs;
+
+}Stream_msgs;
+
+
+/**
+ * 发送
+ * 
+ */
 #pragma pack(1) //1 字节对齐
 typedef struct 
 {
@@ -88,42 +127,9 @@ typedef struct
     uint8_t      header[2];
     uint8_t      len;
     uint16_t     crc;
-
-
-
-
-    
     Speed_msgs   speed;
 }Frame_Speed_msgs;
 #pragma pack()  //结束字节对齐
-
-
-
-
-
-
-
-
-void pasrse_data()
-{
-
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
