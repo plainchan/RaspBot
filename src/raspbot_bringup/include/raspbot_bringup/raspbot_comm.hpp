@@ -121,7 +121,9 @@ typedef struct
     int16_t velocity;             //real velocity = velocity/1000
     int16_t yaw;                  //real yaw = yaw/1000      -3141<=yaw<=3141                 1 deg = 0.017453292 rad
 }Speed_msgs;
+#pragma pack()  //结束字节对齐
 
+#pragma pack(1) //1 字节对齐
 typedef struct 
 {
     uint8_t      header[2];

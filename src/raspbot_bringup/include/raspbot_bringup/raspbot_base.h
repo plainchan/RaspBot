@@ -6,6 +6,10 @@
 #include "nav_msgs/Odometry.h"
 #include "sensor_msgs/Imu.h"
 #include "raspbot_bringup/raspbot_comm.hpp"
+
+#define debug
+
+
 namespace raspbot
 {
 
@@ -13,17 +17,80 @@ class BotBase
 {
 
 public:
+
+    /**
+     * @brief Construct a new Bot Base object
+     * 
+     * @param nh 
+     * @param private_nh 
+     */
     BotBase(ros::NodeHandle nh,ros::NodeHandle private_nh);
+
+    /**
+     * @brief Destroy the Bot Base object
+     * 
+     */
     ~BotBase();
 
+    /**
+     * @brief 
+     * 
+     */
     void initialize();
-    bool serial_init();
 
+    /**
+     * @brief 
+     * 
+     * @return true 
+     * @return false 
+     */
+
+    bool serial_init();
+    /**
+     * @brief 
+     * 
+     * @param msg_ptr 
+     */
     void speedTwistCallBack(const geometry_msgs::Twist::ConstPtr &msg_ptr);
     
+    /**
+     * @brief 
+     * 
+     */
     void setting();
+
+    /**
+     * @brief 
+     * 
+     * @param event 
+     */
     void periodicUpdate(const ros::TimerEvent &event);
-    
+
+    /**
+     * @brief    将数据流缓冲到Buff,数据流中可能只包含半帧或者多帧数据
+     * 
+     * @param[out] stream_msgs 
+     * @param[in]  buff 
+     * @param[in]  size 
+     * @return int 
+     *               1    解析成功
+     *               -1   帧头错误
+     *               0    帧缓冲未完成
+     *               -2   数据域长度出错
+     */
+    int parse_stream(Stream_msgs &stream_msgs,const uint8_t buff);
+
+    /**
+     * @brief 对一帧数据解码
+     * 
+     * @param[out] stream_msgs 
+     * @param[out] buff
+     * @return int
+     *          1   解析成功
+     *          -1  帧错误
+     */
+    int decode_frame(Stream_msgs &stream_msgsW);
+
 protected:
     ros::NodeHandle   nh_;
     ros::NodeHandle   nhPrivate_;
@@ -57,30 +124,7 @@ protected:
     uint16_t          bytesCount_;
     Stream_msgs       stream_msgs;
 
-    /**
-     * @brief    将数据流缓冲到Buff,数据流中可能只包含半帧或者多帧数据
-     * 
-     * @param[out] stream_msgs 
-     * @param[in]  buff 
-     * @param[in]  size 
-     * @return int 
-     *         1   解析成功
-     *         -1  帧头错误
-     *         0   校验错误
-     *         -2  数据域长度出错
-     */
-    int parse_stream(Stream_msgs &stream_msgs,const uint8_t buff);
 
-    /**
-     * @brief 对一帧数据解码
-     * 
-     * @param[out] stream_msgs 
-     * @param[out] buff
-     * @return int
-     *          1   解析成功
-     *          -1  帧错误
-     */
-    int decode_frame(Stream_msgs &stream_msgsW);
 
     Bytes2U16   B2U16;
     Bytes2Float B2F;

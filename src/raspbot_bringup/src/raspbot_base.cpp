@@ -265,6 +265,8 @@ namespace raspbot
             ++offset;
             break;
         }
+
+        return 1;
     }
     void BotBase::speedTwistCallBack(const geometry_msgs::Twist::ConstPtr &msg_ptr)
     {
@@ -272,16 +274,23 @@ namespace raspbot
         frame.header[0] = Header1;
         frame.header[1] = Header2;
         frame.len = 5;
-        frame.crc = 0;
+        frame.crc = 244;
         frame.speed.data_tag = speed_tag;
         frame.speed.velocity = (int16_t)(msg_ptr->linear.x * 1000);
         frame.speed.yaw = (int16_t)(msg_ptr->angular.z * 1000);
 
         std::vector<uint8_t> Bytes = structPack_Bytes<Frame_Speed_msgs>(frame);
-        // ROS_INFO("%x",Bytes[0]);
-        // ROS_INFO("%x",Bytes[1]);
-        // ROS_INFO("%d",(short)Bytes[7]<<8 | Bytes[6]);
-        // ROS_INFO("%d",(short)Bytes[9]<<8 | Bytes[8]);
+
+#ifdef debug
+        ROS_INFO("%x",Bytes[0]);
+        ROS_INFO("%x",Bytes[1]);
+        ROS_INFO("%d",Bytes[2]);
+        ROS_INFO("%d",(short)Bytes[4]<<8 | Bytes[3]);
+        ROS_INFO("%x",Bytes[5]);
+        ROS_INFO("%d",(short)(Bytes[7]<<8 | Bytes[6]));
+        ROS_INFO("%d",(short)(Bytes[9]<<8 | Bytes[8])); 
+#endif
+
         sp_.write(Bytes);
     }
 
