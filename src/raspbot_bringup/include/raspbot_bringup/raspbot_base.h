@@ -7,7 +7,7 @@
 #include "sensor_msgs/Imu.h"
 #include "raspbot_bringup/raspbot_comm.hpp"
 
-#define debug
+// #define debug
 
 
 namespace raspbot

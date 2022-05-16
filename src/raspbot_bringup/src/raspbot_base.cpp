@@ -3,15 +3,16 @@
 namespace raspbot
 {
 
-    BotBase::BotBase(ros::NodeHandle nh, ros::NodeHandle private_nh) : nh_(nh),
-                                                                       nhPrivate_(private_nh),
-                                                                       base_frame_("base_link"),
-                                                                       odom_frame_("odom"),
-                                                                       imu_frame_("imu_link"),
-                                                                       udev_port_("/dev/raspbot_com_port"),
-                                                                       baud_(115200),
-                                                                       frequency_(50),
-                                                                       bytesCount_(0)
+    BotBase::BotBase(ros::NodeHandle nh, ros::NodeHandle private_nh)
+        : nh_(nh),
+          nhPrivate_(private_nh),
+          base_frame_("base_link"),
+          odom_frame_("odom"),
+          imu_frame_("imu_link"),
+          udev_port_("/dev/raspbot_com_port"),
+          baud_(115200),
+          frequency_(50),
+          bytesCount_(0)
     {
         stream_msgs.crc = 0;
         stream_msgs.len = 0;
@@ -152,7 +153,7 @@ namespace raspbot
 
         if (bytesCount_ == 2) //检查帧头
         {
-            if (stream_msgs.stream_buff[0] != Header1 || stream_msgs.stream_buff[1] == Header2)
+            if (stream_msgs.stream_buff[0] != Header1 || stream_msgs.stream_buff[1] != Header2)
             {
                 bytesCount_ = 0;
                 return -1; //错误帧
@@ -274,7 +275,7 @@ namespace raspbot
         frame.header[0] = Header1;
         frame.header[1] = Header2;
         frame.len = 5;
-        frame.crc = 244;
+        frame.crc = 0;
         frame.speed.data_tag = speed_tag;
         frame.speed.velocity = (int16_t)(msg_ptr->linear.x * 1000);
         frame.speed.yaw = (int16_t)(msg_ptr->angular.z * 1000);
@@ -282,13 +283,13 @@ namespace raspbot
         std::vector<uint8_t> Bytes = structPack_Bytes<Frame_Speed_msgs>(frame);
 
 #ifdef debug
-        ROS_INFO("%x",Bytes[0]);
-        ROS_INFO("%x",Bytes[1]);
-        ROS_INFO("%d",Bytes[2]);
-        ROS_INFO("%d",(short)Bytes[4]<<8 | Bytes[3]);
-        ROS_INFO("%x",Bytes[5]);
-        ROS_INFO("%d",(short)(Bytes[7]<<8 | Bytes[6]));
-        ROS_INFO("%d",(short)(Bytes[9]<<8 | Bytes[8])); 
+        ROS_INFO("%x", Bytes[0]);
+        ROS_INFO("%x", Bytes[1]);
+        ROS_INFO("%d", Bytes[2]);
+        ROS_INFO("%d", (short)Bytes[4] << 8 | Bytes[3]);
+        ROS_INFO("%x", Bytes[5]);
+        ROS_INFO("%d", (short)(Bytes[7] << 8 | Bytes[6]));
+        ROS_INFO("%d", (short)(Bytes[9] << 8 | Bytes[8]));
 #endif
 
         sp_.write(Bytes);
