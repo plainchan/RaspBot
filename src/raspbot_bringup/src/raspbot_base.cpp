@@ -12,12 +12,14 @@ namespace raspbot
           udev_port_("/dev/raspbot_com_port"),
           baud_(115200),
           frequency_(50),
-          bytesCount_(0)
+          bytesCount_(0),
+          publish_odom_(true),
+          imu_topic_("imu/data"),
+          odom_topic_("wheel_odom")
     {
         stream_msgs.crc = 0;
         stream_msgs.len = 0;
 
-        stream_msgs.robot_msgs.data_tag = 0;
         stream_msgs.robot_msgs.voltage = 0;
         stream_msgs.robot_msgs.l_encoder_pulse = 0;
         stream_msgs.robot_msgs.r_encoder_pulse = 0;
@@ -43,8 +45,8 @@ namespace raspbot
     {
         setting();
 
-        imu_pub_ = nh_.advertise<sensor_msgs::Imu>("imu/data", 10);
-        odom_pub_ = nh_.advertise<nav_msgs::Odometry>("wheel_odom", 10);
+        imu_pub_ = nh_.advertise<sensor_msgs::Imu>(imu_topic_, 10);
+        odom_pub_ = nh_.advertise<nav_msgs::Odometry>(odom_topic_, 10);
 
         periodicUpdateTimer_ = nh_.createTimer(ros::Duration(1. / frequency_), &BotBase::periodicUpdate, this);
     }
@@ -54,13 +56,21 @@ namespace raspbot
         nhPrivate_.param<std::string>("base_frame", base_frame_, "base_link");
         nhPrivate_.param<std::string>("odom_frame", odom_frame_, "odom");
         nhPrivate_.param<std::string>("imu_frame", imu_frame_, "imu_link");
+
+        nhPrivate_.param<std::string>("odom_topic", odom_topic_, "odom");
+        nhPrivate_.param<std::string>("imu_topic", imu_topic_, "imu/data");
+        nhPrivate_.param<bool>("baud", publish_odom_, true);
+
+        nhPrivate_.param<std::string>("twist_topic", twist_topic_, "cmd_vel");
+        
+
         nhPrivate_.param<std::string>("udev_port", udev_port_, "/dev/raspbot_com_port");
         nhPrivate_.param<int>("baud", baud_, 115200);
         nhPrivate_.param<double>("frequency", frequency_, 50);
 
         serial_init();
 
-        twist_sub_ = nh_.subscribe<geometry_msgs::Twist>("/cmd_vel", 10, &BotBase::speedTwistCallBack, this);
+        twist_sub_ = nh_.subscribe<geometry_msgs::Twist>(twist_topic_, 10, &BotBase::speedTwistCallBack, this);
     }
 
     bool BotBase::serial_init()

@@ -1,3 +1,27 @@
+/*
+ * MIT License
+ *
+ * Copyright (c) 2022 plainchan
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 #ifndef _RASPBOT_BASE_H_
 #define _RASPBOT_BASE_H_
 
@@ -10,6 +34,7 @@
 // #define debug
 
 
+
 namespace raspbot
 {
 
@@ -19,7 +44,7 @@ class BotBase
 public:
 
     /**
-     * @brief Construct a new Bot Base object
+     * @brief Construct a new BotBase object
      * 
      * @param nh 
      * @param private_nh 
@@ -27,40 +52,40 @@ public:
     BotBase(ros::NodeHandle nh,ros::NodeHandle private_nh);
 
     /**
-     * @brief Destroy the Bot Base object
+     * @brief Destroy the BotBase object
      * 
      */
     ~BotBase();
 
     /**
-     * @brief 
+     * @brief  初始化
      * 
      */
     void initialize();
 
     /**
-     * @brief 
+     * @brief  初始化串口配置
      * 
      * @return true 
      * @return false 
      */
-
     bool serial_init();
+
     /**
-     * @brief 
+     * @brief 回调函数
      * 
      * @param msg_ptr 
      */
     void speedTwistCallBack(const geometry_msgs::Twist::ConstPtr &msg_ptr);
     
     /**
-     * @brief 
+     * @brief  设置参数
      * 
      */
     void setting();
 
     /**
-     * @brief 
+     * @brief 定时器回调函数
      * 
      * @param event 
      */
@@ -91,44 +116,86 @@ public:
      */
     int decode_frame(Stream_msgs &stream_msgsW);
 
+    /**
+     * @brief Set the Imu Value object
+     * 
+     * @param imu 
+     */
+    void setImuValue(sensor_msgs::Imu &imu);
+
+    /**
+     * @brief 计算里程计
+     * 
+     * @param odom 
+     */
+    void calcuOdomValue(nav_msgs::Odometry &odom);
+
 protected:
+
+    /**
+     * @brief Nodehandle for publisher and subscriber
+     *   nh_        
+     *   nhPrivate_   参数服务器
+     */
     ros::NodeHandle   nh_;
     ros::NodeHandle   nhPrivate_;
 
-    ros::Publisher    odom_pub_;
+    /**
+     * @brief  定时器
+     * 
+     */
+    ros::Timer        periodicUpdateTimer_;
+    double            frequency_;
+
+    /**
+     * @brief 里程计发布管理
+     * 
+     */
+    ros::Publisher      odom_pub_;
+    nav_msgs::Odometry  wheel_odom_;
+    std::string         odom_topic_;
+    bool                publish_odom_;
+
+    /**
+     * @brief IMU发布管理
+     * 
+     */
     ros::Publisher    imu_pub_;
+    sensor_msgs::Imu  imu_;
+    std::string       imu_topic_;
 
+    /**
+     * @brief Twist订阅管理
+     * 
+     */
     ros::Subscriber   twist_sub_;
+    std::string       twist_topic_;
 
-    serial::Serial    sp_;
 
-
+    /**
+     * @brief         frame id
+     * 
+     */
     std::string       base_frame_;
     std::string       odom_frame_;
     std::string       imu_frame_;
+
+    /**
+     * @brief         串口
+     * 
+     */
+    serial::Serial    sp_;
     std::string       udev_port_;
     int               baud_;
 
-    double            frequency_;
+    
 
-    bool              publish_odom_;
-    ros::Timer        periodicUpdateTimer_;
-
-    sensor_msgs::Imu  imu_;
-    void setImuValue(sensor_msgs::Imu &imu);
-
-    nav_msgs::Odometry wheel_odom_;
-    void calcuOdomValue(nav_msgs::Odometry &odom);
-
-
-    uint16_t          bytesCount_;
+    /**
+     * @brief 
+     * 
+     */
     Stream_msgs       stream_msgs;
-
-
-
-    Bytes2U16   B2U16;
-    Bytes2Float B2F;
-    Bytes2INT16 B2INT16;
+    uint16_t          bytesCount_;
 };
 
 

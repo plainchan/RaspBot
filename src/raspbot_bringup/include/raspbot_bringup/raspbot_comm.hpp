@@ -60,27 +60,7 @@
 #define robot_tag                0xA0
 #define speed_tag                0xB0
 
-typedef union 
-{
-    float   number;
-    uint8_t bytes[4];
-}Bytes2Float;
 
-typedef union 
-{
-    uint16_t   number;
-    uint8_t    bytes[2];
-}Bytes2U16;
-typedef union 
-{
-    int16_t    number;
-    uint8_t    bytes[2];
-}Bytes2INT16;
-typedef union 
-{
-    uint32_t   number;
-    uint8_t    bytes[4];
-}Bytes2U32;
 
 /**
  * @brief status of robot 
@@ -89,7 +69,6 @@ typedef union
  */
 typedef struct Robot_State_Info_msgs
 {
-    int8_t     data_tag;
     float      voltage;                 //real voltage = voltage/10
     int16_t    l_encoder_pulse;
     int16_t    r_encoder_pulse;
@@ -121,18 +100,37 @@ typedef struct
     int16_t velocity;             //real velocity = velocity/1000
     int16_t yaw;                  //real yaw = yaw/1000      -3141<=yaw<=3141                 1 deg = 0.017453292 rad
 }Speed_msgs;
-#pragma pack()  //结束字节对齐
 
-#pragma pack(1) //1 字节对齐
 typedef struct 
 {
     uint8_t      header[2];
     uint8_t      len;
     uint16_t     crc;
+
     Speed_msgs   speed;
 }Frame_Speed_msgs;
 #pragma pack()  //结束字节对齐
 
+
+template <typename T>
+union BytesConv
+{
+
+    uint8_t bytes[4];
+    T       number;
+
+};
+
+
+// template <typename T>
+// T Bytes2Num(const uint8_t* p,uint8_t size)
+// {
+
+//     for(int i=0;i<size;++i)
+//     {
+
+//     }
+// }
 
 
 /**
