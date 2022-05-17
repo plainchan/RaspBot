@@ -13,7 +13,7 @@ raspbot是一个基于ROS的小车。它采用树莓派4B作为微型电脑，ST
 *  SOF  .........  start of frame, 2 bytes                                              *
 *  LEN  .........  number of data package in the frame                                  *
 *  CRC  .........  cyclic redundancy check                                              *
-*  DPKG .........  data package,include DATA_TAG,DATA                                   *                               
+*  DPKG .........  data package,include DATA_TAG,DATA                                   *
 *                                                                                       *
 *  ,------+--------------+---------+---------+                                          *
 *  |      |    Type      |  size   |  offset |                                          *
