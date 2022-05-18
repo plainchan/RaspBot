@@ -13,7 +13,7 @@
         <param name="odom_frame"      type="string"        value="$(arg odom_frame)"/>
         <param name="udev_port"       type="string"        value="$(arg udev_port)"/>
         <param name="baud"            type="int"           value="$(arg baud)"/>
-        <param name="frequency"       type="int"           value="$(arg baud)"/>
+        <param name="frequency"       type="double"           value="$(arg frequency)"/>
     </node>
 
 

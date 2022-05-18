@@ -112,26 +112,22 @@ typedef struct
 #pragma pack()  //结束字节对齐
 
 
-template <typename T>
+template <typename T,std::size_t N>
 union BytesConv
 {
-
-    uint8_t bytes[4];
+    uint8_t bytes[N];
     T       number;
-
 };
 
-
-// template <typename T>
-// T Bytes2Num(const uint8_t* p,uint8_t size)
-// {
-
-//     for(int i=0;i<size;++i)
-//     {
-
-//     }
-// }
-
+template <typename T,std::size_t N>
+T Bytes2Num(const uint8_t* p)
+{
+    BytesConv<T,N> conv;
+    for(int i=0;i<N;++i)
+       conv.bytes[i]=p[i];
+    
+    return conv.number;
+}
 
 /**
  * @brief 

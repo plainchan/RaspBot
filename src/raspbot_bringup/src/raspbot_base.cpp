@@ -150,8 +150,11 @@ namespace raspbot
                 {
                     setImuValue(imu_);
                     imu_pub_.publish(imu_);
-                    // calcuOdomValue(wheel_odom_);
-                    // odom_pub_.publish(wheel_odom_);
+                    if(publish_odom_)
+                    {
+                        // calcuOdomValue(wheel_odom_);
+                        // odom_pub_.publish(wheel_odom_);
+                    }
                 }
             }
         }
@@ -180,10 +183,7 @@ namespace raspbot
         }
         else if (bytesCount_ == 5) // crc
         {
-
-            B2U16.bytes[0] = stream_msgs.stream_buff[bytesCount_ - 2];
-            B2U16.bytes[1] = stream_msgs.stream_buff[bytesCount_ - 1];
-            stream_msgs.crc = B2U16.number;
+            stream_msgs.crc = Bytes2Num<uint16_t,2>(&stream_msgs.stream_buff[bytesCount_ - 2]);
         }
         else if (bytesCount_ >= stream_msgs.len + FRAME_INFO_SIZE)
         {
@@ -203,75 +203,28 @@ namespace raspbot
         {
         case robot_tag:
 
-            stream_msgs.robot_msgs.voltage = ((float)buff[++offset]) / 10;
-            B2INT16.bytes[0] = buff[++offset];
-            B2INT16.bytes[1] = buff[++offset];
-            stream_msgs.robot_msgs.l_encoder_pulse = B2INT16.number;
-            B2INT16.bytes[0] = buff[++offset];
-            B2INT16.bytes[1] = buff[++offset];
-            stream_msgs.robot_msgs.r_encoder_pulse = B2INT16.number;
-            B2F.bytes[0] = buff[++offset];
-            B2F.bytes[1] = buff[++offset];
-            B2F.bytes[2] = buff[++offset];
-            B2F.bytes[3] = buff[++offset];
-            stream_msgs.robot_msgs.acc[0] = B2F.number;
-            B2F.bytes[0] = buff[++offset];
-            B2F.bytes[1] = buff[++offset];
-            B2F.bytes[2] = buff[++offset];
-            B2F.bytes[3] = buff[++offset];
-            stream_msgs.robot_msgs.acc[1] = B2F.number;
-            B2F.bytes[0] = buff[++offset];
-            B2F.bytes[1] = buff[++offset];
-            B2F.bytes[2] = buff[++offset];
-            B2F.bytes[3] = buff[++offset];
-            stream_msgs.robot_msgs.acc[2] = B2F.number;
-            B2F.bytes[0] = buff[++offset];
-            B2F.bytes[1] = buff[++offset];
-            B2F.bytes[2] = buff[++offset];
-            B2F.bytes[3] = buff[++offset];
-            stream_msgs.robot_msgs.gyr[0] = B2F.number;
-            B2F.bytes[0] = buff[++offset];
-            B2F.bytes[1] = buff[++offset];
-            B2F.bytes[2] = buff[++offset];
-            B2F.bytes[3] = buff[++offset];
-            stream_msgs.robot_msgs.gyr[1] = B2F.number;
-            B2F.bytes[0] = buff[++offset];
-            B2F.bytes[1] = buff[++offset];
-            B2F.bytes[2] = buff[++offset];
-            B2F.bytes[3] = buff[++offset];
-            stream_msgs.robot_msgs.gyr[2] = B2F.number;
-            B2F.bytes[0] = buff[++offset];
-            B2F.bytes[1] = buff[++offset];
-            B2F.bytes[2] = buff[++offset];
-            B2F.bytes[3] = buff[++offset];
-            stream_msgs.robot_msgs.mag[0] = B2F.number;
-            B2F.bytes[0] = buff[++offset];
-            B2F.bytes[1] = buff[++offset];
-            B2F.bytes[2] = buff[++offset];
-            B2F.bytes[3] = buff[++offset];
-            stream_msgs.robot_msgs.mag[1] = B2F.number;
-            B2F.bytes[0] = buff[++offset];
-            B2F.bytes[1] = buff[++offset];
-            B2F.bytes[2] = buff[++offset];
-            B2F.bytes[3] = buff[++offset];
-            stream_msgs.robot_msgs.mag[2] = B2F.number;
-            B2F.bytes[0] = buff[++offset];
-            B2F.bytes[1] = buff[++offset];
-            B2F.bytes[2] = buff[++offset];
-            B2F.bytes[3] = buff[++offset];
-            stream_msgs.robot_msgs.elu[0] = B2F.number;
-            B2F.bytes[0] = buff[++offset];
-            B2F.bytes[1] = buff[++offset];
-            B2F.bytes[2] = buff[++offset];
-            B2F.bytes[3] = buff[++offset];
-            stream_msgs.robot_msgs.elu[1] = B2F.number;
-            B2F.bytes[0] = buff[++offset];
-            B2F.bytes[1] = buff[++offset];
-            B2F.bytes[2] = buff[++offset];
-            B2F.bytes[3] = buff[++offset];
-            stream_msgs.robot_msgs.elu[2] = B2F.number;
-            break;
+            stream_msgs.robot_msgs.voltage = ((float)buff[++offset]) / 10.0;
+            
+            stream_msgs.robot_msgs.l_encoder_pulse = Bytes2Num<int16_t,2>(&buff[offset+1]);offset+=2;
+            
+            stream_msgs.robot_msgs.r_encoder_pulse = Bytes2Num<int16_t,2>(&buff[offset+1]);offset+=2;
+      
+            stream_msgs.robot_msgs.acc[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+            stream_msgs.robot_msgs.acc[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+            stream_msgs.robot_msgs.acc[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
 
+            stream_msgs.robot_msgs.gyr[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+            stream_msgs.robot_msgs.gyr[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+            stream_msgs.robot_msgs.gyr[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+
+            stream_msgs.robot_msgs.mag[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+            stream_msgs.robot_msgs.mag[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+            stream_msgs.robot_msgs.mag[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+           
+            stream_msgs.robot_msgs.elu[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+            stream_msgs.robot_msgs.elu[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+            stream_msgs.robot_msgs.elu[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+            break;
         default:
             ++offset;
             break;
@@ -285,7 +238,7 @@ namespace raspbot
         frame.header[0] = Header1;
         frame.header[1] = Header2;
         frame.len = 5;
-        frame.crc = 0;
+        frame.crc = 219;
         frame.speed.data_tag = speed_tag;
         frame.speed.velocity = (int16_t)(msg_ptr->linear.x * 1000);
         frame.speed.yaw = (int16_t)(msg_ptr->angular.z * 1000);
@@ -296,10 +249,10 @@ namespace raspbot
         ROS_INFO("%x", Bytes[0]);
         ROS_INFO("%x", Bytes[1]);
         ROS_INFO("%d", Bytes[2]);
-        ROS_INFO("%d", (short)Bytes[4] << 8 | Bytes[3]);
+        ROS_INFO("%d", Bytes2Num<uint16_t,2>(&Bytes[3]));
         ROS_INFO("%x", Bytes[5]);
-        ROS_INFO("%d", (short)(Bytes[7] << 8 | Bytes[6]));
-        ROS_INFO("%d", (short)(Bytes[9] << 8 | Bytes[8]));
+        ROS_INFO("%d", Bytes2Num<uint16_t,2>(&Bytes[6]));
+        ROS_INFO("%d", Bytes2Num<uint16_t,2>(&Bytes[8]));
 #endif
 
         sp_.write(Bytes);
