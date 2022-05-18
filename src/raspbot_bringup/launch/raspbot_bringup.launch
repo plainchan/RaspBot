@@ -3,12 +3,22 @@
 <launch>
     <arg name="base_frame"       default="base_link"/>
     <arg name="odom_frame"       default="odom"/>
+    <arg name="imu_frame"        default="imu_link"/>
+
+    <arg name="odom_topic"       default="wheel_odom"/>
+    <arg name="imu_topic"        default="imu/data"/>
+    <arg name="publish_odom"     default="true"/>
+
     <arg name="udev_port"        default="/dev/raspbot_com_port"/>
     <arg name="baud"             default="115200"/>
+
     <include file="$(find raspbot_bringup)/launch/raspbot_minimal.launch" >
         <arg name="base_frame"       value="$(arg base_frame)"/>
         <arg name="odom_frame"       value="$(arg odom_frame)"/>
         <arg name="udev_port"        value="$(arg udev_port)"/>
+        <arg name="odom_topic"       value="$(arg odom_topic)"/>
+        <arg name="imu_topic"        value="$(arg imu_topic)"/>
+        <arg name="publish_odom"     value="$(arg publish_odom)"/>
         <arg name="baud"             value="$(arg baud)"/>
     </include>
 

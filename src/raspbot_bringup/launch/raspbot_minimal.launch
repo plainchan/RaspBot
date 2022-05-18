@@ -4,16 +4,28 @@
     <!-- params -->
     <arg name="base_frame"       default="base_link"/>
     <arg name="odom_frame"       default="odom"/>
+    <arg name="imu_frame"        default="imu_link"/>
+    
+    <arg name="frequency"        default="50.0" />   <!-- Receive date interval -->
+    
     <arg name="udev_port"        default="/dev/raspbot_com_port"/>
     <arg name="baud"             default="115200"/>
-    <arg name="frequency"        default="50.0" />   <!-- Receive date interval -->
+
+    <arg name="odom_topic"       default="wheel_odom"/>
+    <arg name="imu_topic"        default="imu/data"/>
+    <arg name="publish_odom"     default="true"/>
+
     <!-- launch node -->
     <node pkg="raspbot_bringup"  type="raspbot_bringup_node" name="raspbot_bringup" output="screen">
         <param name="base_frame"      type="string"        value="$(arg base_frame)"/>
         <param name="odom_frame"      type="string"        value="$(arg odom_frame)"/>
+        <param name="imu_frame"       type="string"        value="$(arg imu_frame)"/>
+        <param name="frequency"       type="double"        value="$(arg frequency)"/>
         <param name="udev_port"       type="string"        value="$(arg udev_port)"/>
         <param name="baud"            type="int"           value="$(arg baud)"/>
-        <param name="frequency"       type="double"           value="$(arg frequency)"/>
+        <param name="odom_topic"      type="string"        value="$(arg odom_topic)"/>
+        <param name="imu_topic "      type="string"        value="$(arg imu_topic)"/>
+        <param name="publish_odom"    type="bool"          value="$(arg publish_odom)"/>
     </node>
 
 

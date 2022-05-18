@@ -194,7 +194,7 @@ protected:
      * @brief 
      * 
      */
-    Stream_msgs       stream_msgs;
+    Stream_msgs       stream_msgs={};
     uint16_t          bytesCount_;
 };
 

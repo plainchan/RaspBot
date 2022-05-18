@@ -40,32 +40,85 @@
 #include <vector>
 #include <cstring>
 
+// #define imu_mag      //IMU是否带磁力计
+
+
 /**
- * 串口传输缓冲区最大大小
- * 
+ * @brief 串口传输缓冲区最大大小
  */
 #define MAX_RxBUFF_SIZE   0x01FE                   //510
 
 /**
- *  帧缓冲区最大大小
- * 
+ * @brief 帧缓冲区最大大小
  */
 #define MAX_BUFF_SIZE      0xFF                             //255
 #define FRAME_INFO_SIZE    0x05                             //5  非数据域
-#define MAX_DPKG_SIZE    (MAX_BUFF_SIZE-FRAME_INFO_SIZE)    //250
+#define MAX_DPKG_SIZE      (MAX_BUFF_SIZE-FRAME_INFO_SIZE)    //250
 
+/**
+ * @brief 帧头
+ */
 #define Header1                  0xFE
 #define Header2                  0xEF
 
+/**
+ * @brief 数据包标签
+ */
 #define robot_tag                0xA0
 #define speed_tag                0xB0
+#define encoder_tag              0xC0
+#define imu_tag                  0xD0
+#define imu_6axis_tag            0xD6
+#define imu_9axis_tag            0xD9
+      
 
+/**
+ * @brief 数据包长度
+ */
+#define speed_dpkg_len
+
+
+/***********数据解包结构体定义***********/
+
+/**
+ * @brief 编码器
+ */
+typedef struct Encoder_Pulse_msg
+{
+    int16_t    l_encoder_pulse;
+    int16_t    r_encoder_pulse;
+}Encoder_msg;
 
 
 /**
+ * @brief 
+ */
+typedef struct IMU_Acc_Gyr_msg
+{
+    float      acc[3];
+    float      gyr[3];
+}IMU_6Axis_msg;
+typedef struct IMU_Acc_Gyr_Mag_msg
+{
+    float      acc[3];
+    float      gyr[3];
+    float      mag[3];
+}IMU_9Axis_msg;
+/**
+ * @brief IMU
+ */
+typedef struct IMU_Acc_Gyr_Elu_msg
+{
+    float      acc[3];
+    float      gyr[3];
+#ifdef     imu_mag
+    float      mag[3];
+#endif
+    float      elu[3];
+}IMU_msg;
+
+/**
  * @brief status of robot 
- *         
- * 
  */
 typedef struct Robot_State_Info_msgs
 {
@@ -74,10 +127,15 @@ typedef struct Robot_State_Info_msgs
     int16_t    r_encoder_pulse;
     float      acc[3];
     float      gyr[3];
+#ifdef     imu_mag
     float      mag[3];
+#endif
     float      elu[3];
 }Robot_msgs;
 
+/**
+ * @brief 
+ */
 typedef struct receiveStream
 {
     uint8_t        len;
@@ -85,56 +143,50 @@ typedef struct receiveStream
 
     uint8_t        stream_buff[MAX_BUFF_SIZE];
     Robot_msgs     robot_msgs;
-
+    // Encoder_msg    encoder_msg;
 }Stream_msgs;
+
+//----------------------------------------
+
+
+
+
 
 
 /**
- * 发送
+ * @brief  共享内存，将N bytes内存数据转换成特定数据
  * 
+ * @tparam T  数据类型
+ * @tparam N  数据类型大小
  */
-#pragma pack(1) //1 字节对齐
-typedef struct 
-{
-    int8_t  data_tag;
-    int16_t velocity;             //real velocity = velocity/1000
-    int16_t yaw;                  //real yaw = yaw/1000      -3141<=yaw<=3141                 1 deg = 0.017453292 rad
-}Speed_msgs;
-
-typedef struct 
-{
-    uint8_t      header[2];
-    uint8_t      len;
-    uint16_t     crc;
-
-    Speed_msgs   speed;
-}Frame_Speed_msgs;
-#pragma pack()  //结束字节对齐
-
-
 template <typename T,std::size_t N>
 union BytesConv
 {
     uint8_t bytes[N];
     T       number;
 };
-
+/**
+ * @brief  对共用体赋值
+ * 
+ * @tparam T 数据类型
+ * @tparam N 数据类型大小
+ * @param p  内存数据地址
+ * @return T 返回内存数据转换的制定数据类型的值
+ */
 template <typename T,std::size_t N>
 T Bytes2Num(const uint8_t* p)
 {
     BytesConv<T,N> conv;
     for(int i=0;i<N;++i)
        conv.bytes[i]=p[i];
-    
     return conv.number;
 }
-
 /**
- * @brief 
+ * @brief 将结构体转换成字节流
  * 
- * @tparam T 
- * @param t 
- * @return uint8_t* 
+ * @tparam T   结构体类型
+ * @param[in]  T_struct  结构体变量
+ * @return std::vector<uint8_t> 
  */
 template <typename T>
 std::vector<uint8_t> structPack_Bytes(T &T_struct)
@@ -145,4 +197,33 @@ std::vector<uint8_t> structPack_Bytes(T &T_struct)
     return Bytes;
 }
 
+
+
+
+
+/***********数据封包结构体定义***********/
+
+#pragma pack(1) //1 字节对齐
+
+/**
+ * @brief 速度数据包
+ */
+typedef struct 
+{
+    int8_t  data_tag;
+    int16_t velocity;             //real velocity = velocity/1000
+    int16_t yaw;                  //real yaw = yaw/1000      -3141<=yaw<=3141                 1 deg = 0.017453292 rad
+}Speed_dpkg;
+typedef struct 
+{
+    uint8_t      header[2];
+    uint8_t      len;
+    uint16_t     crc;
+
+    Speed_dpkg   speed;
+}Frame_Speed_dpkg;
+
+#pragma pack()  //结束字节对齐
+
 #endif
+

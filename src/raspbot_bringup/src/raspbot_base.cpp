@@ -12,32 +12,56 @@ namespace raspbot
           udev_port_("/dev/raspbot_com_port"),
           baud_(115200),
           frequency_(50),
-          bytesCount_(0),
           publish_odom_(true),
           imu_topic_("imu/data"),
           odom_topic_("wheel_odom")
     {
         stream_msgs.crc = 0;
         stream_msgs.len = 0;
-
         stream_msgs.robot_msgs.voltage = 0;
         stream_msgs.robot_msgs.l_encoder_pulse = 0;
         stream_msgs.robot_msgs.r_encoder_pulse = 0;
-
         stream_msgs.robot_msgs.acc[0] = 0.0;
         stream_msgs.robot_msgs.acc[1] = 0.0;
         stream_msgs.robot_msgs.acc[2] = 0.0;
-
         stream_msgs.robot_msgs.gyr[0] = 0.0;
         stream_msgs.robot_msgs.gyr[1] = 0.0;
         stream_msgs.robot_msgs.gyr[2] = 0.0;
-
+#ifdef  imu_mag
         stream_msgs.robot_msgs.mag[0] = 0.0;
         stream_msgs.robot_msgs.mag[1] = 0.0;
         stream_msgs.robot_msgs.mag[2] = 0.0;
+#endif
+        // ROS_INFO_STREAM((uint16_t)stream_msgs.len);
+        // ROS_INFO_STREAM(stream_msgs.crc);
+        // ROS_INFO_STREAM(stream_msgs.robot_msgs.voltage);
+        // ROS_INFO_STREAM(stream_msgs.robot_msgs.l_encoder_pulse);
+        // ROS_INFO_STREAM(stream_msgs.robot_msgs.r_encoder_pulse);
+        // ROS_INFO_STREAM(stream_msgs.robot_msgs.acc[0]);
+        // ROS_INFO_STREAM(stream_msgs.robot_msgs.acc[1]);
+        // ROS_INFO_STREAM(stream_msgs.robot_msgs.acc[2]);
+        // ROS_INFO_STREAM(stream_msgs.robot_msgs.gyr[0]);
+        // ROS_INFO_STREAM(stream_msgs.robot_msgs.gyr[1]);
+        // ROS_INFO_STREAM(stream_msgs.robot_msgs.gyr[2]);
+#ifdef imu_tag
+        // ROS_INFO_STREAM(stream_msgs.robot_msgs.mag[0]);
+        // ROS_INFO_STREAM(stream_msgs.robot_msgs.mag[1]);
+        // ROS_INFO_STREAM(stream_msgs.robot_msgs.mag[2]);
+#endif
     }
     BotBase::~BotBase()
     {
+        Frame_Speed_dpkg frame;
+        frame.header[0] = Header1;
+        frame.header[1] = Header2;
+        frame.len = 5;
+        frame.crc = 0;
+        frame.speed.data_tag = speed_tag;
+        frame.speed.velocity = 0;
+        frame.speed.yaw = 0;
+        std::vector<uint8_t> Bytes = structPack_Bytes<Frame_Speed_dpkg>(frame);
+        sp_.write(Bytes);
+
         sp_.close();
     }
 
@@ -59,13 +83,14 @@ namespace raspbot
 
         nhPrivate_.param<std::string>("odom_topic", odom_topic_, "odom");
         nhPrivate_.param<std::string>("imu_topic", imu_topic_, "imu/data");
-        nhPrivate_.param<bool>("baud", publish_odom_, true);
+        nhPrivate_.param<bool>("publish_odom", publish_odom_, true);
 
         nhPrivate_.param<std::string>("twist_topic", twist_topic_, "cmd_vel");
         
 
         nhPrivate_.param<std::string>("udev_port", udev_port_, "/dev/raspbot_com_port");
         nhPrivate_.param<int>("baud", baud_, 115200);
+        
         nhPrivate_.param<double>("frequency", frequency_, 50);
 
         serial_init();
@@ -158,36 +183,38 @@ namespace raspbot
                 }
             }
         }
+
+
     }
     int BotBase::parse_stream(Stream_msgs &stream_msgs, const uint8_t buff)
     {
+        static uint16_t bytesCount=0;
+        stream_msgs.stream_buff[bytesCount++] = buff;
 
-        stream_msgs.stream_buff[bytesCount_++] = buff;
-
-        if (bytesCount_ == 2) //检查帧头
+        if (bytesCount == 2) //检查帧头
         {
             if (stream_msgs.stream_buff[0] != Header1 || stream_msgs.stream_buff[1] != Header2)
             {
-                bytesCount_ = 0;
+                bytesCount = 0;
                 return -1; //错误帧
             }
         }
-        else if (bytesCount_ == 3) // DPKG 长度
+        else if (bytesCount == 3) // DPKG 长度
         {
-            stream_msgs.len = stream_msgs.stream_buff[bytesCount_ - 1];
+            stream_msgs.len = stream_msgs.stream_buff[bytesCount - 1];
             if (stream_msgs.len > MAX_DPKG_SIZE)
             {
-                bytesCount_ = 0;
+                bytesCount = 0;
                 return -2;
             }
         }
-        else if (bytesCount_ == 5) // crc
+        else if (bytesCount == 5) // crc
         {
-            stream_msgs.crc = Bytes2Num<uint16_t,2>(&stream_msgs.stream_buff[bytesCount_ - 2]);
+            stream_msgs.crc = Bytes2Num<uint16_t,2>(&stream_msgs.stream_buff[bytesCount - 2]);
         }
-        else if (bytesCount_ >= stream_msgs.len + FRAME_INFO_SIZE)
+        else if (bytesCount >= stream_msgs.len + FRAME_INFO_SIZE)
         {
-            bytesCount_ = 0;
+            bytesCount = 0;
 
             return decode_frame(stream_msgs);
         }
@@ -216,11 +243,11 @@ namespace raspbot
             stream_msgs.robot_msgs.gyr[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
             stream_msgs.robot_msgs.gyr[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
             stream_msgs.robot_msgs.gyr[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-
+#ifdef  imu_mag
             stream_msgs.robot_msgs.mag[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
             stream_msgs.robot_msgs.mag[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
             stream_msgs.robot_msgs.mag[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-           
+#endif          
             stream_msgs.robot_msgs.elu[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
             stream_msgs.robot_msgs.elu[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
             stream_msgs.robot_msgs.elu[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
@@ -234,7 +261,7 @@ namespace raspbot
     }
     void BotBase::speedTwistCallBack(const geometry_msgs::Twist::ConstPtr &msg_ptr)
     {
-        Frame_Speed_msgs frame;
+        Frame_Speed_dpkg frame;
         frame.header[0] = Header1;
         frame.header[1] = Header2;
         frame.len = 5;
@@ -243,7 +270,7 @@ namespace raspbot
         frame.speed.velocity = (int16_t)(msg_ptr->linear.x * 1000);
         frame.speed.yaw = (int16_t)(msg_ptr->angular.z * 1000);
 
-        std::vector<uint8_t> Bytes = structPack_Bytes<Frame_Speed_msgs>(frame);
+        std::vector<uint8_t> Bytes = structPack_Bytes<Frame_Speed_dpkg>(frame);
 
 #ifdef debug
         ROS_INFO("%x", Bytes[0]);
