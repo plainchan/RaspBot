@@ -195,7 +195,6 @@ protected:
      * 
      */
     Stream_msgs       stream_msgs={};
-    uint16_t          bytesCount_;
 };
 
 
