@@ -194,7 +194,7 @@ protected:
      * @brief 
      * 
      */
-    Stream_msgs       stream_msgs={};
+    Stream_msgs       stream_msgs={0};
 };
 
 
