@@ -16,22 +16,22 @@ namespace raspbot
           imu_topic_("imu/data"),
           odom_topic_("wheel_odom")
     {
-        stream_msgs.crc = 0;
-        stream_msgs.len = 0;
-        stream_msgs.robot_msgs.voltage = 0;
-        stream_msgs.robot_msgs.l_encoder_pulse = 0;
-        stream_msgs.robot_msgs.r_encoder_pulse = 0;
-        stream_msgs.robot_msgs.acc[0] = 0.0;
-        stream_msgs.robot_msgs.acc[1] = 0.0;
-        stream_msgs.robot_msgs.acc[2] = 0.0;
-        stream_msgs.robot_msgs.gyr[0] = 0.0;
-        stream_msgs.robot_msgs.gyr[1] = 0.0;
-        stream_msgs.robot_msgs.gyr[2] = 0.0;
-#ifdef  imu_mag
-        stream_msgs.robot_msgs.mag[0] = 0.0;
-        stream_msgs.robot_msgs.mag[1] = 0.0;
-        stream_msgs.robot_msgs.mag[2] = 0.0;
-#endif
+//         stream_msgs.crc = 0;
+//         stream_msgs.len = 0;
+//         stream_msgs.robot_msgs.voltage = 0;
+//         stream_msgs.robot_msgs.l_encoder_pulse = 0;
+//         stream_msgs.robot_msgs.r_encoder_pulse = 0;
+//         stream_msgs.robot_msgs.acc[0] = 0.0;
+//         stream_msgs.robot_msgs.acc[1] = 0.0;
+//         stream_msgs.robot_msgs.acc[2] = 0.0;
+//         stream_msgs.robot_msgs.gyr[0] = 0.0;
+//         stream_msgs.robot_msgs.gyr[1] = 0.0;
+//         stream_msgs.robot_msgs.gyr[2] = 0.0;
+// #ifdef  imu_mag
+//         stream_msgs.robot_msgs.mag[0] = 0.0;
+//         stream_msgs.robot_msgs.mag[1] = 0.0;
+//         stream_msgs.robot_msgs.mag[2] = 0.0;
+// #endif
         // ROS_INFO_STREAM((uint16_t)stream_msgs.len);
         // ROS_INFO_STREAM(stream_msgs.crc);
         // ROS_INFO_STREAM(stream_msgs.robot_msgs.voltage);
@@ -168,11 +168,13 @@ namespace raspbot
             }
 
             buff_size = sp_.read(RxBuff, buff_size);
-
+            // ROS_INFO_STREAM("time here");
             for (int i = 0; i < buff_size; ++i)
             {
                 if (parse_stream(stream_msgs, RxBuff[i]) == 1)
-                {
+                {   
+                    // ROS_INFO_STREAM(stream_msgs.encoder_msg.l_encoder_pulse);
+                    // ROS_INFO_STREAM(stream_msgs.encoder_msg.r_encoder_pulse);
                     setImuValue(imu_);
                     imu_pub_.publish(imu_);
                     if(publish_odom_)
@@ -181,6 +183,8 @@ namespace raspbot
                         // odom_pub_.publish(wheel_odom_);
                     }
                 }
+                // else
+                //     ROS_INFO_STREAM("parse here");
             }
         }
 
@@ -191,18 +195,26 @@ namespace raspbot
         static uint16_t bytesCount=0;
         stream_msgs.stream_buff[bytesCount++] = buff;
 
+        ROS_INFO("%d",bytesCount);
         if (bytesCount == 2) //检查帧头
         {
             if (stream_msgs.stream_buff[0] != Header1 || stream_msgs.stream_buff[1] != Header2)
             {
+<<<<<<< HEAD
                 bytesCount = 1;
                 stream_msgs.stream_buff[0] = stream_msgs.stream_buff[1];
+=======
+                // ROS_INFO("%x",stream_msgs.stream_buff[0]);
+                // ROS_INFO("%x",stream_msgs.stream_buff[1]);
+                bytesCount = 0;
+>>>>>>> 80bc1b28c8a9bc65b9213c10c96c11168d8458ae
                 return -1; //错误帧
             }
         }
         else if (bytesCount == 3) // DPKG 长度
         {
             stream_msgs.len = stream_msgs.stream_buff[bytesCount - 1];
+            // ROS_INFO("%d",stream_msgs.len);
             if (stream_msgs.len > MAX_DPKG_SIZE)
             {
                 bytesCount = 0;
@@ -212,9 +224,11 @@ namespace raspbot
         else if (bytesCount == 5) // crc
         {
             stream_msgs.crc = Bytes2Num<uint16_t,2>(&stream_msgs.stream_buff[bytesCount - 2]);
+            // ROS_INFO("%d",stream_msgs.crc);
         }
-        else if (bytesCount >= stream_msgs.len + FRAME_INFO_SIZE)
+        else if (bytesCount>3 && bytesCount >= stream_msgs.len + FRAME_INFO_SIZE)
         {
+            // ROS_INFO("here");
             bytesCount = 0;
 
             return decode_frame(stream_msgs);
@@ -253,6 +267,46 @@ namespace raspbot
             stream_msgs.robot_msgs.elu[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
             stream_msgs.robot_msgs.elu[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
             break;
+
+        case encoder_tag:
+            stream_msgs.encoder_msg.l_encoder_pulse = Bytes2Num<int16_t,2>(&buff[offset+1]);offset+=2;
+            stream_msgs.encoder_msg.r_encoder_pulse = Bytes2Num<int16_t,2>(&buff[offset+1]);offset+=2;
+        case imu_tag:
+            stream_msgs.imu_msg.acc[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+            stream_msgs.imu_msg.acc[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+            stream_msgs.imu_msg.acc[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+
+            stream_msgs.imu_msg.gyr[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+            stream_msgs.imu_msg.gyr[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+            stream_msgs.imu_msg.gyr[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+#ifdef  imu_mag
+            stream_msgs.imu_msg.mag[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+            stream_msgs.imu_msg.mag[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+            stream_msgs.imu_msg.mag[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+#endif          
+            stream_msgs.imu_msg.elu[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+            stream_msgs.imu_msg.elu[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+            stream_msgs.imu_msg.elu[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+        case imu_6axis_tag:
+            stream_msgs.imu_6axis_msg.acc[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+            stream_msgs.imu_6axis_msg.acc[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+            stream_msgs.imu_6axis_msg.acc[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+
+            stream_msgs.imu_6axis_msg.gyr[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+            stream_msgs.imu_6axis_msg.gyr[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+            stream_msgs.imu_6axis_msg.gyr[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+        case imu_9axis_tag:
+            stream_msgs.imu_9axis_msg.acc[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+            stream_msgs.imu_9axis_msg.acc[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+            stream_msgs.imu_9axis_msg.acc[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+
+            stream_msgs.imu_9axis_msg.gyr[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+            stream_msgs.imu_9axis_msg.gyr[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+            stream_msgs.imu_9axis_msg.gyr[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+
+            stream_msgs.imu_9axis_msg.mag[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+            stream_msgs.imu_9axis_msg.mag[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+            stream_msgs.imu_9axis_msg.mag[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
         default:
             ++offset;
             break;
@@ -265,7 +319,7 @@ namespace raspbot
         Frame_Speed_dpkg frame;
         frame.header[0] = Header1;
         frame.header[1] = Header2;
-        frame.len = 5;
+        frame.len = speed_dpkg_len;
         frame.crc = 219;
         frame.speed.data_tag = speed_tag;
         frame.speed.velocity = (int16_t)(msg_ptr->linear.x * 1000);
@@ -292,13 +346,13 @@ namespace raspbot
         imu.header.seq = 100;
         imu.header.stamp = ros::Time::now();
 
-        imu.linear_acceleration.x = stream_msgs.robot_msgs.acc[0];
+        imu.linear_acceleration.x = stream_msgs.encoder_msg.l_encoder_pulse;//stream_msgs.robot_msgs.acc[0];
         imu.linear_acceleration.y = stream_msgs.robot_msgs.acc[1];
         imu.linear_acceleration.z = stream_msgs.robot_msgs.acc[2];
 
         imu.linear_acceleration_covariance = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-        imu.angular_velocity.x = stream_msgs.robot_msgs.gyr[0];
+        imu.angular_velocity.x = stream_msgs.encoder_msg.l_encoder_pulse;//stream_msgs.robot_msgs.gyr[0];
         imu.angular_velocity.y = stream_msgs.robot_msgs.gyr[1];
         imu.angular_velocity.z = stream_msgs.robot_msgs.gyr[2];
 
