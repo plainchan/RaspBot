@@ -75,47 +75,10 @@
 /**
  * @brief 数据包长度
  */
-#define speed_dpkg_len
+#define speed_dpkg_len   (uint8_t)0x05
 
 
 /***********数据解包结构体定义***********/
-
-/**
- * @brief 编码器
- */
-typedef struct Encoder_Pulse_msg
-{
-    int16_t    l_encoder_pulse;
-    int16_t    r_encoder_pulse;
-}Encoder_msg;
-
-
-/**
- * @brief 
- */
-typedef struct IMU_Acc_Gyr_msg
-{
-    float      acc[3];
-    float      gyr[3];
-}IMU_6Axis_msg;
-typedef struct IMU_Acc_Gyr_Mag_msg
-{
-    float      acc[3];
-    float      gyr[3];
-    float      mag[3];
-}IMU_9Axis_msg;
-/**
- * @brief IMU
- */
-typedef struct IMU_Acc_Gyr_Elu_msg
-{
-    float      acc[3];
-    float      gyr[3];
-#ifdef     imu_mag
-    float      mag[3];
-#endif
-    float      elu[3];
-}IMU_msg;
 
 /**
  * @brief status of robot 
@@ -143,7 +106,6 @@ typedef struct receiveStream
 
     uint8_t        stream_buff[MAX_BUFF_SIZE];
     Robot_msgs     robot_msgs;
-    // Encoder_msg    encoder_msg;
 }Stream_msgs;
 
 //----------------------------------------
@@ -206,6 +168,17 @@ std::vector<uint8_t> structPack_Bytes(T &T_struct)
 #pragma pack(1) //1 字节对齐
 
 /**
+ * @brief 帧信息
+ */
+typedef struct 
+{
+    uint8_t      header[2];
+    uint8_t      len;
+    uint16_t     crc;
+}Frame_Info;
+
+
+/**
  * @brief 速度数据包
  */
 typedef struct 
@@ -214,6 +187,9 @@ typedef struct
     int16_t velocity;             //real velocity = velocity/1000
     int16_t yaw;                  //real yaw = yaw/1000      -3141<=yaw<=3141                 1 deg = 0.017453292 rad
 }Speed_dpkg;
+/**
+ * @brief 封装速度帧
+ */
 typedef struct 
 {
     uint8_t      header[2];

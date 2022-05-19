@@ -142,14 +142,12 @@ protected:
 
     /**
      * @brief  定时器
-     * 
      */
     ros::Timer        periodicUpdateTimer_;
     double            frequency_;
 
     /**
      * @brief 里程计发布管理
-     * 
      */
     ros::Publisher      odom_pub_;
     nav_msgs::Odometry  wheel_odom_;
@@ -166,7 +164,6 @@ protected:
 
     /**
      * @brief Twist订阅管理
-     * 
      */
     ros::Subscriber   twist_sub_;
     std::string       twist_topic_;
@@ -174,7 +171,6 @@ protected:
 
     /**
      * @brief         frame id
-     * 
      */
     std::string       base_frame_;
     std::string       odom_frame_;
@@ -182,7 +178,6 @@ protected:
 
     /**
      * @brief         串口
-     * 
      */
     serial::Serial    sp_;
     std::string       udev_port_;
@@ -192,7 +187,6 @@ protected:
 
     /**
      * @brief 
-     * 
      */
     Stream_msgs       stream_msgs={};
 };

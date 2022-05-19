@@ -195,7 +195,8 @@ namespace raspbot
         {
             if (stream_msgs.stream_buff[0] != Header1 || stream_msgs.stream_buff[1] != Header2)
             {
-                bytesCount = 0;
+                bytesCount = 1;
+                stream_msgs.stream_buff[0] = stream_msgs.stream_buff[1];
                 return -1; //错误帧
             }
         }
