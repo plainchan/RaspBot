@@ -68,18 +68,13 @@
 #define speed_tag                0xB0
 #define encoder_tag              0xC0
 #define imu_tag                  0xD0
-#define imu_6axis_tag            0xD6
-#define imu_9axis_tag            0xD9
+#define imu_sensor_tag           0xD1
 #define voltage_tag              0xE0  
 
 /**
  * @brief 数据包长度
  */
-<<<<<<< HEAD
-#define speed_dpkg_len   (uint8_t)0x05
-=======
 #define speed_dpkg_len  (uint8_t)0x05
->>>>>>> 80bc1b28c8a9bc65b9213c10c96c11168d8458ae
 
 
 /***********数据解包结构体定义***********/
@@ -109,14 +104,6 @@ typedef struct receiveStream
     uint16_t       crc;
 
     uint8_t        stream_buff[MAX_BUFF_SIZE];
-    Robot_msgs     robot_msgs;
-<<<<<<< HEAD
-=======
-    Encoder_msg    encoder_msg;
-    IMU_msg        imu_msg;
-    IMU_6Axis_msg  imu_6axis_msg;
-    IMU_9Axis_msg  imu_9axis_msg;
->>>>>>> 80bc1b28c8a9bc65b9213c10c96c11168d8458ae
 }Stream_msgs;
 
 //----------------------------------------

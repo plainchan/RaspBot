@@ -189,6 +189,7 @@ protected:
      * @brief 
      */
     Stream_msgs       stream_msgs={0};
+    Robot_msgs       robot_msgs={0};
 };
 
 
