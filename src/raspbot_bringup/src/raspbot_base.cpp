@@ -1,4 +1,5 @@
 #include "raspbot_bringup/raspbot_base.h"
+#include "raspbot_bringup/crc16.h"
 
 namespace raspbot
 {
