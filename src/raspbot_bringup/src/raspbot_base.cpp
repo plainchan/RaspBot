@@ -16,41 +16,36 @@ namespace raspbot
           imu_topic_("imu/data"),
           odom_topic_("wheel_odom")
     {
-//         robot_msgs.crc = 0;
-//         robot_msgs.len = 0;
-//         robot_msgs.robot_msgs.voltage = 0;
-//         robot_msgs.robot_msgs.l_encoder_pulse = 0;
-//         robot_msgs.robot_msgs.r_encoder_pulse = 0;
-//         robot_msgs.robot_msgs.acc[0] = 0.0;
-//         robot_msgs.robot_msgs.acc[1] = 0.0;
-//         robot_msgs.robot_msgs.acc[2] = 0.0;
-//         robot_msgs.robot_msgs.gyr[0] = 0.0;
-//         robot_msgs.robot_msgs.gyr[1] = 0.0;
-//         robot_msgs.robot_msgs.gyr[2] = 0.0;
-// #ifdef  imu_mag
-//         robot_msgs.robot_msgs.mag[0] = 0.0;
-//         robot_msgs.robot_msgs.mag[1] = 0.0;
-//         robot_msgs.robot_msgs.mag[2] = 0.0;
-// #endif
-        // ROS_INFO_STREAM((uint16_t)robot_msgs.len);
-        // ROS_INFO_STREAM(robot_msgs.crc);
-        // ROS_INFO_STREAM(robot_msgs.robot_msgs.voltage);
-        // ROS_INFO_STREAM(robot_msgs.robot_msgs.l_encoder_pulse);
-        // ROS_INFO_STREAM(robot_msgs.robot_msgs.r_encoder_pulse);
-        // ROS_INFO_STREAM(robot_msgs.robot_msgs.acc[0]);
-        // ROS_INFO_STREAM(robot_msgs.robot_msgs.acc[1]);
-        // ROS_INFO_STREAM(robot_msgs.robot_msgs.acc[2]);
-        // ROS_INFO_STREAM(robot_msgs.robot_msgs.gyr[0]);
-        // ROS_INFO_STREAM(robot_msgs.robot_msgs.gyr[1]);
-        // ROS_INFO_STREAM(robot_msgs.robot_msgs.gyr[2]);
-#ifdef imu_tag
-        // ROS_INFO_STREAM(robot_msgs.robot_msgs.mag[0]);
-        // ROS_INFO_STREAM(robot_msgs.robot_msgs.mag[1]);
-        // ROS_INFO_STREAM(robot_msgs.robot_msgs.mag[2]);
-#endif
+        robot_msgs.voltage = 12.6;
+        robot_msgs.l_encoder_pulse = 0;
+        robot_msgs.r_encoder_pulse = 0;
+        robot_msgs.acc[0] = 0.0;
+        robot_msgs.acc[1] = 0.0;
+        robot_msgs.acc[2] = 0.0;
+        robot_msgs.gyr[0] = 0.0;
+        robot_msgs.gyr[1] = 0.0;
+        robot_msgs.gyr[2] = 0.0;
+#ifdef  imu_mag
+        robot_msgs.mag[0] = 0.0;
+        robot_msgs.mag[1] = 0.0;
+        robot_msgs.mag[2] = 0.0;
+#endif /* imu_mag */
+        robot_msgs.elu[0] = 0.0;
+        robot_msgs.elu[1] = 0.0;
+        robot_msgs.elu[2] = 0.0;
+
+        stream_msgs.len = 0;
+        stream_msgs.crc = 0;
+
+        for(int i=0;i<MAX_BUFF_SIZE;++i)
+            stream_msgs.stream_buff[i]=0;
+
+
     }
     BotBase::~BotBase()
     {
+
+        /* stop car  */
         Frame_Speed_dpkg frame;
         frame.header[0] = Header1;
         frame.header[1] = Header2;
@@ -92,6 +87,7 @@ namespace raspbot
         nhPrivate_.param<int>("baud", baud_, 115200);
         
         nhPrivate_.param<double>("frequency", frequency_, 50);
+        ROS_INFO_STREAM("Timer:" << 1000.0/frequency_<<" ms");
 
         serial_init();
 
@@ -106,7 +102,20 @@ namespace raspbot
         sp_.setParity(serial::parity_none);
         sp_.setStopbits(serial::stopbits_one);
         sp_.setFlowcontrol(serial::flowcontrol_none);
-        serial::Timeout timeout = serial::Timeout::simpleTimeout(100);
+
+        /**
+         * @brief brief 读取或写入数据之后，延时一段时间，从而让串口读取或写入数据完成
+         * @note  接收时未使用timeout,使用定时器周期读取串口，使用available()检测串口是否有数据，有数据则处理
+         *        发送时使用timeout, 否则write()会写入失败，[延时时间]一定要大于[实际写入时间] ！！！
+         * @bug   使用设置读取延时timeout 终止程序时会导致单片机卡死，原因未知
+         *        使用timeout >1，否则发送失败
+         * @param inter_byte_timeout serial::Timeout::max()  禁止读取每个字节时延时
+         *        read_timeout_constant      0       buff读取完成后不延时
+         *        read_timeout_multiplier    0       buff读取完成后，不延时读取的Bytes个时间
+         *        write_timeout_constant     0       buff写入完成后不延时
+         *        write_timeout_multiplier   1       buff读取完成后，延时写入的Bytes个时间(根据写入时间延迟*因子)[Recommand]
+         */
+        serial::Timeout timeout(serial::Timeout::max(),0,0,10,1);
         sp_.setTimeout(timeout);
 
         try
@@ -124,11 +133,15 @@ namespace raspbot
 
         if (sp_.isOpen())
         {
-            // echo port status
+            /* echo port status */
             ROS_INFO_STREAM("serial port opened succeed");
-            // print port information
+            /* print port information */
             ROS_INFO_STREAM("port:" << sp_.getPort());
             ROS_INFO_STREAM("baud:" << sp_.getBaudrate());
+            
+            /* clear cache  */
+            if(sp_.available())
+                sp_.read(sp_.available());
 
             return true;
         }
@@ -142,12 +155,13 @@ namespace raspbot
     void BotBase::periodicUpdate(const ros::TimerEvent &event)
     {
 
+
+
         // read and process serial buff
         size_t buff_size = sp_.available();
         if (buff_size)
         {
             uint8_t RxBuff[MAX_RxBUFF_SIZE];
-
             //缓冲区太大，选择最近的数据
             if (buff_size > MAX_RxBUFF_SIZE)
             {
@@ -166,9 +180,14 @@ namespace raspbot
                     buff_size = MAX_BUFF_SIZE;
                 }
             }
+            try
+            {
+                buff_size = sp_.read(RxBuff, buff_size);
+            }
+            catch(...)
+            {
 
-            buff_size = sp_.read(RxBuff, buff_size);
-            // ROS_INFO_STREAM("time here");
+            }
             for (int i = 0; i < buff_size; ++i)
             {
                 if (parse_stream(stream_msgs, RxBuff[i]) == 1)
@@ -180,20 +199,45 @@ namespace raspbot
                         // calcuOdomValue(wheel_odom_);
                         // odom_pub_.publish(wheel_odom_);
                     }
-                }
-                // else
-                //     ROS_INFO_STREAM("parse here");
-            }
-        }
 
+                    /*  show params */
+    #define debug_robot_params
+    #ifdef  debug_robot_params
+                    static int count=0;
+                    if(++count>frequency_)
+                    {
+                        ROS_INFO_STREAM("------------------------------------\n"<<
+                        "V       "      << robot_msgs.voltage << "\n" <<     
+                        "encoder "      << robot_msgs.l_encoder_pulse <<"\t"
+                                        << robot_msgs.r_encoder_pulse   <<"\n"
+                        "acc     "      << robot_msgs.acc[0] <<"\t"
+                                        << robot_msgs.acc[1] <<"\t"
+                                        << robot_msgs.acc[2] <<"\n"  
+                        "gyr     "      << robot_msgs.gyr[0] <<"\t"
+                                        << robot_msgs.gyr[1] <<"\t"
+                                        << robot_msgs.gyr[2] <<"\n"
+                        #ifdef imu_mag
+                        "mag     "      << robot_msgs.mag[0] <<"\t"
+                                        << robot_msgs.mag[1] <<"\t"
+                                        << robot_msgs.mag[2] <<"\n"
+                        #endif
+                        "elu     "      << robot_msgs.elu[0] <<"\t"
+                                        << robot_msgs.elu[1] <<"\t"
+                                        << robot_msgs.elu[2] 
+                        );
+                        count=0;
+                    }
+    #endif
+                }
+            }
+
+        }
 
     }
     int BotBase::parse_stream(Stream_msgs &stream_msgs, const uint8_t buff)
     {
         static uint16_t bytesCount=0;
         stream_msgs.stream_buff[bytesCount++] = buff;
-
-        ROS_INFO("%d",bytesCount);
         if (bytesCount == 2) //检查帧头
         {
             if (stream_msgs.stream_buff[0] != Header1 || stream_msgs.stream_buff[1] != Header2)
@@ -216,7 +260,7 @@ namespace raspbot
         {
             stream_msgs.crc = Bytes2Num<uint16_t,2>(&stream_msgs.stream_buff[bytesCount - 2]);
         }
-        else if (bytesCount>3 && bytesCount >= stream_msgs.len + FRAME_INFO_SIZE)
+        else if (bytesCount >= FRAME_INFO_SIZE + stream_msgs.len)
         {
             bytesCount = 0;
 
@@ -230,68 +274,78 @@ namespace raspbot
     {
         uint8_t offset = 0;
         uint8_t *buff = &stream_msgs.stream_buff[FRAME_INFO_SIZE];
-        switch (buff[offset])
+        uint8_t len = stream_msgs.len;
+        while(offset < len)
         {
-        case robot_tag:
+            switch (buff[offset])
+            {
+            case robot_tag:
 
-            robot_msgs.voltage = ((float)buff[++offset]) / 10.0;
-            
-            robot_msgs.l_encoder_pulse = Bytes2Num<int16_t,2>(&buff[offset+1]);offset+=2;
-            
-            robot_msgs.r_encoder_pulse = Bytes2Num<int16_t,2>(&buff[offset+1]);offset+=2;
-      
-            robot_msgs.acc[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-            robot_msgs.acc[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-            robot_msgs.acc[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.voltage = ((float)buff[++offset]) / 10.0;
 
-            robot_msgs.gyr[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-            robot_msgs.gyr[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-            robot_msgs.gyr[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-#ifdef  imu_mag
-            robot_msgs.mag[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-            robot_msgs.mag[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-            robot_msgs.mag[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-#endif          
-            robot_msgs.elu[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-            robot_msgs.elu[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-            robot_msgs.elu[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-            break;
+                robot_msgs.l_encoder_pulse = Bytes2Num<int16_t,2>(&buff[offset+1]);offset+=2;
 
-        case encoder_tag:
-            robot_msgs.l_encoder_pulse = Bytes2Num<int16_t,2>(&buff[offset+1]);offset+=2;
-            robot_msgs.r_encoder_pulse = Bytes2Num<int16_t,2>(&buff[offset+1]);offset+=2;
-        case imu_tag:
-            robot_msgs.acc[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-            robot_msgs.acc[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-            robot_msgs.acc[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.r_encoder_pulse = Bytes2Num<int16_t,2>(&buff[offset+1]);offset+=2;
 
-            robot_msgs.gyr[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-            robot_msgs.gyr[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-            robot_msgs.gyr[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-#ifdef  imu_mag
-            robot_msgs.mag[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-            robot_msgs.mag[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-            robot_msgs.mag[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-#endif          
-            robot_msgs.elu[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-            robot_msgs.elu[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-            robot_msgs.elu[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-        case imu_sensor_tag:
-            robot_msgs.acc[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-            robot_msgs.acc[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-            robot_msgs.acc[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.acc[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.acc[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.acc[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
 
-            robot_msgs.gyr[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-            robot_msgs.gyr[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-            robot_msgs.gyr[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-#ifdef imu_mag
-            robot_msgs.mag[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-            robot_msgs.mag[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-            robot_msgs.mag[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-#endif
-        default:
+                robot_msgs.gyr[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.gyr[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.gyr[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+        #ifdef  imu_mag
+                robot_msgs.mag[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.mag[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.mag[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+        #endif          
+                robot_msgs.elu[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.elu[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.elu[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                break; /* robot_tag */
+            case voltage_tag:
+                robot_msgs.voltage = ((float)buff[++offset])/10.0;
+                break; /* voltage_tag */
+            case encoder_tag:
+                robot_msgs.l_encoder_pulse = Bytes2Num<int16_t,2>(&buff[offset+1]);offset+=2;
+                robot_msgs.r_encoder_pulse = Bytes2Num<int16_t,2>(&buff[offset+1]);offset+=2;
+                break; /* encoder_tag */
+            case imu_tag:
+                robot_msgs.acc[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.acc[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.acc[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+
+                robot_msgs.gyr[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.gyr[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.gyr[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+        #ifdef  imu_mag
+                robot_msgs.mag[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.mag[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.mag[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+        #endif          
+                robot_msgs.elu[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.elu[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.elu[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                break; /* imu_tag */
+            case imu_sensor_tag:
+                robot_msgs.acc[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.acc[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.acc[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+
+                robot_msgs.gyr[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.gyr[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.gyr[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+        #ifdef imu_mag
+                robot_msgs.mag[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.mag[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.mag[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+        #endif
+                break; /* imu_sensor_tag */
+            default:
+                ++offset;
+                break; /* default */
+            }
             ++offset;
-            break;
         }
 
         return 1;
@@ -308,18 +362,25 @@ namespace raspbot
         frame.speed.yaw = (int16_t)(msg_ptr->angular.z * 1000);
 
         std::vector<uint8_t> Bytes = structPack_Bytes<Frame_Speed_dpkg>(frame);
+        // ROS_INFO("%ld", Bytes.size());
+        // ROS_INFO("%x", Bytes[0]);
+        // ROS_INFO("%x", Bytes[1]);
+        // ROS_INFO("%d", Bytes[2]);
+        // ROS_INFO("%d", Bytes2Num<uint16_t,2>(&Bytes[3]));
+        // ROS_INFO("%x", Bytes[5]);
+        // ROS_INFO("%.1f",(float) Bytes2Num<int16_t,2>(&Bytes[6])/1000.0);
+        // ROS_INFO("%.1f",(float) Bytes2Num<int16_t,2>(&Bytes[8])/1000.0);
 
-#ifdef debug
-        ROS_INFO("%x", Bytes[0]);
-        ROS_INFO("%x", Bytes[1]);
-        ROS_INFO("%d", Bytes[2]);
-        ROS_INFO("%d", Bytes2Num<uint16_t,2>(&Bytes[3]));
-        ROS_INFO("%x", Bytes[5]);
-        ROS_INFO("%d", Bytes2Num<uint16_t,2>(&Bytes[6]));
-        ROS_INFO("%d", Bytes2Num<uint16_t,2>(&Bytes[8]));
-#endif
-
-        sp_.write(Bytes);
+        size_t send_count=sp_.write(Bytes);
+        if(send_count < Bytes.size())
+        {
+            ROS_WARN_STREAM("send "<<send_count<<" bytes,but buff have " << Bytes.size() << " bytes");
+            serial::Timeout newTimeout =  sp_.getTimeout();
+            ROS_WARN_STREAM("try to reset timeout");
+            newTimeout.write_timeout_constant+=1;
+            sp_.setTimeout(newTimeout);
+            ROS_WARN_STREAM("new timeout " <<newTimeout.write_timeout_constant << " ms");
+        }
     }
 
     void BotBase::setImuValue(sensor_msgs::Imu &imu)

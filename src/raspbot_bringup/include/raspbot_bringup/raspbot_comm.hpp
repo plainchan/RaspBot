@@ -40,7 +40,7 @@
 #include <vector>
 #include <cstring>
 
-// #define imu_mag      //IMU是否带磁力计
+#define imu_mag      //IMU是否带磁力计
 
 
 /**

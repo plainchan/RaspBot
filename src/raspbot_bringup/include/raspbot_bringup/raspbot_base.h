@@ -31,8 +31,6 @@
 #include "sensor_msgs/Imu.h"
 #include "raspbot_bringup/raspbot_comm.hpp"
 
-// #define debug
-
 
 
 namespace raspbot
@@ -186,10 +184,13 @@ protected:
     
 
     /**
-     * @brief 
+     * @brief         serial --> buff --> frame
      */
-    Stream_msgs       stream_msgs={0};
-    Robot_msgs       robot_msgs={0};
+    Stream_msgs       stream_msgs;
+    /**
+     * @brief         参数
+     */
+    Robot_msgs        robot_msgs;
 };
 
 
