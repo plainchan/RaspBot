@@ -1,5 +1,6 @@
 #include "raspbot_bringup/raspbot_base.h"
 #include "raspbot_bringup/crc16.h"
+#include "raspbot_bringup/crc8.h"
 
 namespace raspbot
 {
@@ -51,7 +52,7 @@ namespace raspbot
         frame.header[0] = Header1;
         frame.header[1] = Header2;
         frame.len = 5;
-        frame.crc = 0;
+        frame.crc_head = 0;
         frame.speed.data_tag = speed_tag;
         frame.speed.velocity = 0;
         frame.speed.yaw = 0;
@@ -239,7 +240,7 @@ namespace raspbot
     {
         static uint16_t bytesCount=0;
         stream_msgs.stream_buff[bytesCount++] = buff;
-        if (bytesCount == 2) //检查帧头
+        if (bytesCount == FRAME_HEAD_OFFSET) //检查帧头
         {
             if (stream_msgs.stream_buff[0] != Header1 || stream_msgs.stream_buff[1] != Header2)
             {
@@ -248,23 +249,36 @@ namespace raspbot
                 return -1; //错误帧
             }
         }
-        else if (bytesCount == 3) // DPKG 长度
+        else if (bytesCount == FRAME_DPKG_LEN_OFFSET) // DPKG 长度
         {
             stream_msgs.len = stream_msgs.stream_buff[bytesCount - 1];
             if (stream_msgs.len > MAX_DPKG_SIZE)
             {
                 bytesCount = 0;
-                return -2;
+                return -3;          //DPKG 长度错误
             }
         }
-        else if (bytesCount == 5) // crc
+        else if (bytesCount == FRAME_HEAD_CRC_OFFSET) // crc
         {
-            stream_msgs.crc = Bytes2Num<uint16_t,2>(&stream_msgs.stream_buff[bytesCount - 2]);
+            stream_msgs.crc = Bytes2Num<uint8_t,1>(&stream_msgs.stream_buff[bytesCount - 1]); //crc8
+            // stream_msgs.crc = Bytes2Num<uint16_t,2>(&stream_msgs.stream_buff[bytesCount - 2]); //crc16
+            if(stream_msgs.crc!=crc_8(stream_msgs.stream_buff,FRAME_DPKG_LEN_OFFSET))
+            {
+                ROS_INFO_STREAM("CRC of header erro");
+                bytesCount = 0;
+                return -1; //校验错误
+            }
+
         }
         else if (bytesCount >= FRAME_INFO_SIZE + stream_msgs.len)
         {
+            stream_msgs.crc = Bytes2Num<uint16_t,2>(&stream_msgs.stream_buff[bytesCount]);
             bytesCount = 0;
-
+            if(stream_msgs.crc!=crc_16(&stream_msgs.stream_buff[FRAME_INFO_SIZE],stream_msgs.len))
+            {
+                ROS_INFO_STREAM("CRC of data erro");
+                return -1; //校验错误
+            }
             return decode_frame(stream_msgs);
         }
 
@@ -353,35 +367,7 @@ namespace raspbot
     }
     void BotBase::speedTwistCallBack(const geometry_msgs::Twist::ConstPtr &msg_ptr)
     {
-        Frame_Speed_dpkg frame;
-        frame.header[0] = Header1;
-        frame.header[1] = Header2;
-        frame.len = speed_dpkg_len;
-        frame.crc = 219;
-        frame.speed.data_tag = speed_tag;
-        frame.speed.velocity = (int16_t)(msg_ptr->linear.x * 1000);
-        frame.speed.yaw = (int16_t)(msg_ptr->angular.z * 1000);
-
-        std::vector<uint8_t> Bytes = structPack_Bytes<Frame_Speed_dpkg>(frame);
-        // ROS_INFO("%ld", Bytes.size());
-        // ROS_INFO("%x", Bytes[0]);
-        // ROS_INFO("%x", Bytes[1]);
-        // ROS_INFO("%d", Bytes[2]);
-        // ROS_INFO("%d", Bytes2Num<uint16_t,2>(&Bytes[3]));
-        // ROS_INFO("%x", Bytes[5]);
-        // ROS_INFO("%.1f",(float) Bytes2Num<int16_t,2>(&Bytes[6])/1000.0);
-        // ROS_INFO("%.1f",(float) Bytes2Num<int16_t,2>(&Bytes[8])/1000.0);
-
-        size_t send_count=sp_.write(Bytes);
-        if(send_count < Bytes.size())
-        {
-            ROS_WARN_STREAM("send "<<send_count<<" bytes,but buff have " << Bytes.size() << " bytes");
-            serial::Timeout newTimeout =  sp_.getTimeout();
-            ROS_WARN_STREAM("try to reset timeout");
-            newTimeout.write_timeout_constant+=1;
-            sp_.setTimeout(newTimeout);
-            ROS_WARN_STREAM("new timeout " <<newTimeout.write_timeout_constant << " ms");
-        }
+        sendFrame_Speed_dpkg(msg_ptr->linear.x,msg_ptr->angular.z);
     }
 
     void BotBase::setImuValue(sensor_msgs::Imu &imu)
@@ -415,5 +401,42 @@ namespace raspbot
         // odom.header=;
         // odom.twist=;
         // odom.pose=;
+    }
+
+    bool BotBase::sendFrame_Speed_dpkg(float speed=0.0,float yaw=0.0)
+    {
+        
+        Frame_Speed_dpkg frame;
+        frame.header[0] = Header1;
+        frame.header[1] = Header2;
+        frame.len = speed_dpkg_len;
+
+        std::vector<uint8_t> Bytes = structPack_Bytes<Frame_Speed_dpkg>(frame);
+        frame.crc_head = crc_8(Bytes.data(),3);
+        
+        frame.speed.data_tag = speed_tag;
+        frame.speed.velocity = speed;
+        frame.speed.yaw =yaw;
+        frame.crc_head = 219;
+        std::vector<uint8_t> Bytes = structPack_Bytes<Frame_Speed_dpkg>(frame);
+        // ROS_INFO("%ld", Bytes.size());
+        // ROS_INFO("%x", Bytes[0]);
+        // ROS_INFO("%x", Bytes[1]);
+        // ROS_INFO("%d", Bytes[2]);
+        // ROS_INFO("%d", Bytes2Num<uint16_t,2>(&Bytes[3]));
+        // ROS_INFO("%x", Bytes[5]);
+        // ROS_INFO("%.1f",(float) Bytes2Num<int16_t,2>(&Bytes[6])/1000.0);
+        // ROS_INFO("%.1f",(float) Bytes2Num<int16_t,2>(&Bytes[8])/1000.0);
+
+        // size_t send_count=sp_.write(Bytes);
+        // if(send_count < Bytes.size())
+        // {
+        //     ROS_WARN_STREAM("send "<<send_count<<" bytes,but buff have " << Bytes.size() << " bytes");
+        //     serial::Timeout newTimeout =  sp_.getTimeout();
+        //     ROS_WARN_STREAM("try to reset timeout");
+        //     newTimeout.write_timeout_constant+=1;
+        //     sp_.setTimeout(newTimeout);
+        //     ROS_WARN_STREAM("new timeout " <<newTimeout.write_timeout_constant << " ms");
+        // }
     }
 }

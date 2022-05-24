@@ -1,6 +1,5 @@
 /*
  * Library: libcrc
- * File:    src/crc8.c
  * Author:  Lammert Bies
  *
  * This file is licensed under the MIT License as stated below
@@ -25,11 +24,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * Description
- * -----------
- * The source file src/crc8.c contains routines for the calculation of 8 bit
- * CRC values according to the calculation rules used in the SHT1x and SHT7x
- * series of temperature and humidity sensors.
  */
 
 #ifndef __CRC_16_H__
@@ -39,11 +33,21 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define		CRC_POLY_16		    0xA001
+#define		CRC_POLY_16		    0xA001 //reverse(0x8005)
 #define		CRC_START_16		0x0000
 
 
-static const uint16_t crc_tab16[256]={
+/******************************************************************************
+ * Name:    CRC-16/IBM          x16+x15+x2+1
+ * Poly:    0x8005
+ * Init:    0x0000
+ * Refin:   True
+ * Refout:  True
+ * Xorout:  0x0000
+ * Alias:   CRC-16,CRC-16/ARC,CRC-16/LHA
+ *****************************************************************************/
+
+static const uint16_t crc16_tab[256]={
 0x0000U,0xC0C1U,0xC181U,0x0140U,0xC301U,0x03C0U,0x0280U,0xC241U,
 0xC601U,0x06C0U,0x0780U,0xC741U,0x0500U,0xC5C1U,0xC481U,0x0440U,
 0xCC01U,0x0CC0U,0x0D80U,0xCD41U,0x0F00U,0xCFC1U,0xCE81U,0x0E40U,
@@ -79,6 +83,7 @@ static const uint16_t crc_tab16[256]={
 };
 
 
+
 /*
  * uint16_t crc_16( const unsigned char *input_str, size_t num_bytes );
  *
@@ -99,7 +104,7 @@ uint16_t crc_16( const unsigned char *input_str, size_t num_bytes ) {
 
 	if ( ptr != NULL ) for (size_t i=0; i<num_bytes; i++) {
 
-		crc = (crc >> 8) ^ crc_tab16[ (crc ^ (uint16_t) *ptr++) & 0x00FF ];
+		crc = (crc >> 8) ^ crc16_tab[ (crc ^ (uint16_t) *ptr++) & 0x00FF ];
 	}
 
 	return crc;
@@ -116,7 +121,7 @@ uint16_t crc_16( const unsigned char *input_str, size_t num_bytes ) {
 
 uint16_t update_crc_16( uint16_t crc, unsigned char c ) {
 
-	return (crc >> 8) ^ crc_tab16[ (crc ^ (uint16_t) c) & 0x00FF ];
+	return (crc >> 8) ^ crc16_tab[ (crc ^ (uint16_t) c) & 0x00FF ];
 
 }  /* update_crc_16 */
 

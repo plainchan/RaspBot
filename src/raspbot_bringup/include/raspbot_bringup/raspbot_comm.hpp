@@ -4,17 +4,20 @@
 /****************************************************************************************
 *                             Serial Protocol                                           *
 *                                                                                       *
-*  ,------+------+-------+- - - - - -+- - - - - -+- - - - -+                            *
-*  | SOF  |  LEN | CRC16 |    DPKG   |    DPKG   |   ....  |                            *
-*  |  2   |   1  |   2   |    ...    |    ...    |   ...   |                            *
-*  '----- +------+-------+- - - - - -+- - - - - -+- - - - -+                            *
+*  ,------+------+------+-------+- - - - - -+- - - - - -+- - - - -+- - - - -+           *
+*  | Type | SOF  |  LEN |  CRC  |    DPKG   |    DPKG   |   ....  |   CRC   |           *
+*  ,------+------+------+-------+-----------+-----------+---------+---------+           *
+*  | size |  2   |   1  |   1   |    ...    |    ...    |   ...   |    2    |           *
+*  '----- +------+------+-------+- - - - - -+- - - - - -+- - - - -+- - - - -+           *
 *  SOF  .........  start of frame, 2 bytes                                              *
 *  LEN  .........  number of data package in the frame                                  *
-*  CRC  .........  cyclic redundancy check                                              *
+*  CRC  .........  Head of Frame's cyclic redundancy check                              *
 *  DPKG .........  data package,include DATA_TAG,DATA                                   *
+*  CRC  .........  DATA cyclic redundancy check                                         *   
+*                                                                                       *
 *                                                                                       *
 *  ,------+--------------+---------+---------+--------+                                 *
-*  | Type |  elem        |  size   |  offset |  byte  |                                 *
+*  | Type |   element    |  size   |  offset |  byte  |                                 *
 *  ,------,--------------+---------+---------+--------+                                 *
 *  |      | frame  head1 | 1 BYTE  |    0    |    1   |                                 *
 *  | SOF  ,--------------+---------+---------+--------+                                 *
@@ -22,7 +25,7 @@
 *  ,------,--------------+---------+---------+--------+                                 *
 *  | LEN  |              | 1 BYTE  |    2    |    3   |                                 *
 *  ,------,--------------+---------+---------+--------+                                 *
-*  | CRC  |              | 2 BYTES |    3    |    5   |                                 *
+*  | CRC  |              | 1 BYTES |    3    |    5   |                                 *
 *  ,------,--------------+---------+---------+--------+                                 *
 *  |      |   DATA_TAG   | 1 BYTE  |    5    |    6   |                                 *
 *  | DPKG ,--------------+---------+---------+--------+                                 *
@@ -31,7 +34,9 @@
 *  |      |   DATA_TAG   | 1 BYTE  |   6+n   |   7+n  |                                 *
 *  | DPKG ,--------------+---------+---------+--------+                                 *
 *  |      |   DATA       | m BYTES |  6+m+n  |  7+m+n |                                 *
-*  ----------------------+---------+---------+--------+                                 *
+*  '------,--------------+---------+---------+--------+                                 *
+*  | CRC  |              | 1 BYTES |    3    |    5   |                                 *
+*  '------'--------------+---------+---------+--------+                                 *  
 *                                                                                       *
 *  Endian: Little-Endian                                                                *
 *****************************************************************************************/
@@ -46,14 +51,34 @@
 /**
  * @brief 串口传输缓冲区最大大小
  */
-#define MAX_RxBUFF_SIZE   0x01FE                   //510
+#define MAX_RxBUFF_SIZE    510
+
+/**
+ * @brief 
+ */
+     
+#define FRAME_HEAD_CRC_BYTES        1     
+#define FRAME_DPKG_CRC_BYTES        2
+#define FRAME_DPKG_LEN_BYTES        1     
+#define FRAME_INFO_SIZE             (2+FRAME_DPKG_LEN_BYTES+FRAME_HEAD_CRC_BYTES)
 
 /**
  * @brief 帧缓冲区最大大小
  */
-#define MAX_BUFF_SIZE      0xFF                             //255
-#define FRAME_INFO_SIZE    0x05                             //5  非数据域
-#define MAX_DPKG_SIZE      (MAX_BUFF_SIZE-FRAME_INFO_SIZE)    //250
+#define MAX_BUFF_SIZE      255                                //255
+#define MAX_DPKG_SIZE      (MAX_BUFF_SIZE-FRAME_INFO_SIZE)    //251
+
+
+/**
+ * @brief 帧Byte偏移量
+ * 
+ */
+#define FRAME_HEAD_OFFSET               2
+#define FRAME_DPKG_LEN_OFFSET           (FRAME_HEAD_OFFSET + FRAME_DPKG_LEN_BYTES)
+#define FRAME_HEAD_CRC_OFFSET           FRAME_INFO_SIZE
+
+
+
 
 /**
  * @brief 帧头
@@ -101,7 +126,7 @@ typedef struct Robot_State_Info_msgs
 typedef struct receiveStream
 {
     uint8_t        len;
-    uint16_t       crc;
+    uint32_t       crc;
 
     uint8_t        stream_buff[MAX_BUFF_SIZE];
 }Stream_msgs;
@@ -157,6 +182,21 @@ std::vector<uint8_t> structPack_Bytes(T &T_struct)
     return Bytes;
 }
 
+/**
+ * @brief 将结构体转换成字节流
+ * 
+ * @tparam T   结构体类型
+ * @param[in]  T_struct  结构体变量
+ * @return std::vector<uint8_t> 
+ */
+template <typename T>
+std::vector<uint8_t> structPack_Bytes(T &T_struct,int size)
+{
+    std::vector<uint8_t> Bytes(size);
+    memcpy(Bytes.data(),&T_struct,size);
+    return Bytes;
+}
+
 
 
 
@@ -172,7 +212,7 @@ typedef struct
 {
     uint8_t      header[2];
     uint8_t      len;
-    uint16_t     crc;
+    uint8_t      crc;
 }Frame_Info;
 
 
@@ -192,9 +232,9 @@ typedef struct
 {
     uint8_t      header[2];
     uint8_t      len;
-    uint16_t     crc;
-
+    uint8_t      crc_head;
     Speed_dpkg   speed;
+    uint8_t      crc_dpkg;
 }Frame_Speed_dpkg;
 
 #pragma pack()  //结束字节对齐

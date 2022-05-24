@@ -96,10 +96,11 @@ public:
      * @param[in]  buff 
      * @param[in]  size 
      * @return int 
+     *               0    帧缓冲未完成
      *               1    解析成功
      *               -1   帧头错误
-     *               0    帧缓冲未完成
-     *               -2   数据域长度出错
+     *               -2   校验错误
+     *               -3   数据域长度出错
      */
     int parse_stream(Stream_msgs &stream_msgs,const uint8_t buff);
 
@@ -127,6 +128,8 @@ public:
      * @param odom 
      */
     void calcuOdomValue(nav_msgs::Odometry &odom);
+
+    bool sendFrame_Speed_dpkg(float speed,float yaw);
 
 protected:
 
