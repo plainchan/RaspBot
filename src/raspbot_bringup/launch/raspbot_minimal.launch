@@ -6,7 +6,7 @@
     <arg name="odom_frame"       default="odom"/>
     <arg name="imu_frame"        default="imu_link"/>
     
-    <arg name="frequency"        default="1000.0" />   <!-- Receive date interval -->
+    <arg name="frequency"        default="100.0" />   <!-- Receive date interval -->
     
     <arg name="udev_port"        default="/dev/raspbot_com_port"/>
     <arg name="baud"             default="115200"/>
@@ -16,7 +16,7 @@
     <arg name="publish_odom"     default="true"/>
 
     <!-- launch node -->
-    <node pkg="raspbot_bringup"  type="raspbot_bringup_node" name="raspbot_bringup" output="screen">
+    <node pkg="raspbot_bringup"  type="raspbot_bringup_node" name="raspbot_bringup" output="screen" respawn="true"  >
         <param name="base_frame"      type="string"        value="$(arg base_frame)"/>
         <param name="odom_frame"      type="string"        value="$(arg odom_frame)"/>
         <param name="imu_frame"       type="string"        value="$(arg imu_frame)"/>

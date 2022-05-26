@@ -129,7 +129,7 @@ public:
      */
     void calcuOdomValue(nav_msgs::Odometry &odom);
 
-    bool sendFrame_Speed_dpkg(float speed,float yaw);
+    bool sendFrame_Speed_dpkg(float speed=0.0,float yaw=0.0);
 
 protected:
 
@@ -194,6 +194,7 @@ protected:
      * @brief         参数
      */
     Robot_msgs        robot_msgs;
+
 };
 
 

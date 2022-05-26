@@ -136,7 +136,7 @@ add_library(raspbot_base
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(${PROJECT_NAME}_node src/raspbot_bringup_node.cpp)
-
+add_executable(${PROJECT_NAME}__test_node src/raspbot_test.cpp)
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
@@ -151,9 +151,14 @@ add_executable(${PROJECT_NAME}_node src/raspbot_bringup_node.cpp)
 target_link_libraries(raspbot_base
   ${catkin_LIBRARIES}
 )
+
 target_link_libraries(${PROJECT_NAME}_node
   ${catkin_LIBRARIES}
   raspbot_base
+)
+
+target_link_libraries(${PROJECT_NAME}__test_node
+  ${catkin_LIBRARIES}
 )
 
 #############

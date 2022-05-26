@@ -1,6 +1,7 @@
 #include "raspbot_bringup/raspbot_base.h"
 #include "raspbot_bringup/crc16.h"
 #include "raspbot_bringup/crc8.h"
+#include <algorithm>
 
 namespace raspbot
 {
@@ -59,6 +60,9 @@ namespace raspbot
         std::vector<uint8_t> Bytes = structPack_Bytes<Frame_Speed_dpkg>(frame);
         sp_.write(Bytes);
 
+        /* stop car */
+        sendFrame_Speed_dpkg();
+
         sp_.close();
     }
 
@@ -72,6 +76,7 @@ namespace raspbot
         periodicUpdateTimer_ = nh_.createTimer(ros::Duration(1. / frequency_), &BotBase::periodicUpdate, this);
     }
 
+    /* load params and subscribe topic  */
     void BotBase::setting()
     {
         nhPrivate_.param<std::string>("base_frame", base_frame_, "base_link");
@@ -89,8 +94,14 @@ namespace raspbot
         nhPrivate_.param<int>("baud", baud_, 115200);
         
         nhPrivate_.param<double>("frequency", frequency_, 50);
+        
+        if(frequency_>1000 ||frequency_<0)
+        {
+            ROS_FATAL_STREAM("Inappropriate frequency");
+            frequency_ = 50.0;
+            ROS_WARN_STREAM("reset frequency" <<frequency_ <<"HZ" );
+        }
         ROS_INFO_STREAM("Timer:" << 1000.0/frequency_<<" ms");
-
         serial_init();
 
         twist_sub_ = nh_.subscribe<geometry_msgs::Twist>(twist_topic_, 10, &BotBase::speedTwistCallBack, this);
@@ -106,35 +117,23 @@ namespace raspbot
         sp_.setFlowcontrol(serial::flowcontrol_none);
 
         /**
-         * @brief brief 读取或写入数据之后，延时一段时间，从而让串口读取或写入数据完成
-         * @note  接收时未使用timeout,使用定时器周期读取串口，使用available()检测串口是否有数据，有数据则处理
-         *        发送时使用timeout, 否则write()会写入失败，[延时时间]一定要大于[实际写入时间] ！！！
-         * @bug   使用设置读取延时timeout 终止程序时会导致单片机卡死，原因未知
-         *        使用timeout >1，否则发送失败
+         * @brief brief 读取或写入数据之后，延时一段时间,以使读取完成或发送完成
+         * @note  接收时未使用timeout,使用定时器周期读取串口，使用available()检测串口是否有数据，有数据则处理，cpu数据很快
+         *        发送时使用timeout,发送是订阅cmd_vel话题,由于cmd_vel话题频率通常小于50HZ，所以也可不用设置
+         * @bug     
          * @param inter_byte_timeout serial::Timeout::max()  禁止读取每个字节时延时
          *        read_timeout_constant      0       buff读取完成后不延时
          *        read_timeout_multiplier    0       buff读取完成后，不延时读取的Bytes个时间
          *        write_timeout_constant     0       buff写入完成后不延时
          *        write_timeout_multiplier   1       buff读取完成后，延时写入的Bytes个时间(根据写入时间延迟*因子)[Recommand]
          */
-        serial::Timeout timeout(serial::Timeout::max(),0,0,10,1);
+        serial::Timeout timeout(serial::Timeout::max(),0,0,2,0); //发送后延时1ms
         sp_.setTimeout(timeout);
 
         try
         {
             sp_.open();
-        }
-        catch (serial::IOException &e)
-        {
-            ROS_INFO_STREAM("failed to open port:" << sp_.getPort());
-            ROS_ERROR_STREAM(e.what());
-            sp_.close();
-            ros::requestShutdown();
-            return false;
-        }
 
-        if (sp_.isOpen())
-        {
             /* echo port status */
             ROS_INFO_STREAM("serial port opened succeed");
             /* print port information */
@@ -147,24 +146,31 @@ namespace raspbot
 
             return true;
         }
-        else
+        catch (serial::IOException &e)
         {
-            ROS_INFO_STREAM("serial port opened failed");
+            /**
+             * @brief 捕获端口异常，告知错误点，然后重新尝试打开，会终止程序，配合ROS launch的respawn
+             *        可重复启动进程，以使其USB重新插拔后，自动检测端口，无需手动再次启动节点
+             */
+            ROS_ERROR_STREAM("failed to open port:" << sp_.getPort());
+            sp_.open();
             return false;
         }
+        ROS_INFO("Here");
+        
     }
 
     void BotBase::periodicUpdate(const ros::TimerEvent &event)
     {
 
-
-
+        
         // read and process serial buff
         size_t buff_size = sp_.available();
         if (buff_size)
         {
             uint8_t RxBuff[MAX_RxBUFF_SIZE];
-            //缓冲区太大，选择最近的数据
+
+            // 缓冲区太大，选择最近的数据
             if (buff_size > MAX_RxBUFF_SIZE)
             {
                 ROS_WARN_STREAM("Buffer overflow");
@@ -182,14 +188,11 @@ namespace raspbot
                     buff_size = MAX_BUFF_SIZE;
                 }
             }
-            try
-            {
-                buff_size = sp_.read(RxBuff, buff_size);
-            }
-            catch(...)
-            {
 
-            }
+
+            buff_size = sp_.read(RxBuff, buff_size);
+    
+       
             for (int i = 0; i < buff_size; ++i)
             {
                 if (parse_stream(stream_msgs, RxBuff[i]) == 1)
@@ -203,8 +206,8 @@ namespace raspbot
                     }
 
                     /*  show params */
-    #define debug_robot_params
-    #ifdef  debug_robot_params
+#define debug_robot_params
+#ifdef  debug_robot_params
                     static int count=0;
                     if(++count>frequency_)
                     {
@@ -229,7 +232,9 @@ namespace raspbot
                         );
                         count=0;
                     }
-    #endif
+                    
+#endif
+
                 }
             }
 
@@ -258,25 +263,26 @@ namespace raspbot
                 return -3;          //DPKG 长度错误
             }
         }
-        else if (bytesCount == FRAME_HEAD_CRC_OFFSET) // crc
+        else if (bytesCount == FRAME_HEAD_CRC_OFFSET) // crc 帧头校验
         {
-            stream_msgs.crc = Bytes2Num<uint8_t,1>(&stream_msgs.stream_buff[bytesCount - 1]); //crc8
+            stream_msgs.crc = stream_msgs.stream_buff[bytesCount - 1]; //crc8
             // stream_msgs.crc = Bytes2Num<uint16_t,2>(&stream_msgs.stream_buff[bytesCount - 2]); //crc16
-            if(stream_msgs.crc!=crc_8(stream_msgs.stream_buff,FRAME_DPKG_LEN_OFFSET))
+            if(stream_msgs.crc!=crc_8(stream_msgs.stream_buff,FRAME_CALCU_CRC_BYTES))
             {
-                ROS_INFO_STREAM("CRC of header erro");
+                ROS_WARN_STREAM("Erro of header's CRC");
                 bytesCount = 0;
                 return -1; //校验错误
             }
 
         }
-        else if (bytesCount >= FRAME_INFO_SIZE + stream_msgs.len)
+        else if (bytesCount >= FRAME_INFO_SIZE + stream_msgs.len+FRAME_DPKG_CRC_BYTES) 
         {
-            stream_msgs.crc = Bytes2Num<uint16_t,2>(&stream_msgs.stream_buff[bytesCount]);
+            
+            stream_msgs.crc = Bytes2Num<uint16_t,2>(&stream_msgs.stream_buff[bytesCount-FRAME_DPKG_CRC_BYTES]);
             bytesCount = 0;
             if(stream_msgs.crc!=crc_16(&stream_msgs.stream_buff[FRAME_INFO_SIZE],stream_msgs.len))
             {
-                ROS_INFO_STREAM("CRC of data erro");
+                ROS_WARN_STREAM("Erro of data's CRC");
                 return -1; //校验错误
             }
             return decode_frame(stream_msgs);
@@ -367,7 +373,10 @@ namespace raspbot
     }
     void BotBase::speedTwistCallBack(const geometry_msgs::Twist::ConstPtr &msg_ptr)
     {
-        sendFrame_Speed_dpkg(msg_ptr->linear.x,msg_ptr->angular.z);
+        if(!sendFrame_Speed_dpkg(msg_ptr->linear.x,msg_ptr->angular.z))
+        {
+            ROS_WARN_STREAM("Serial send failed");
+        }
     }
 
     void BotBase::setImuValue(sensor_msgs::Imu &imu)
@@ -403,40 +412,40 @@ namespace raspbot
         // odom.pose=;
     }
 
-    bool BotBase::sendFrame_Speed_dpkg(float speed=0.0,float yaw=0.0)
+    bool BotBase::sendFrame_Speed_dpkg(float speed,float yaw)
     {
         
         Frame_Speed_dpkg frame;
+
         frame.header[0] = Header1;
         frame.header[1] = Header2;
         frame.len = speed_dpkg_len;
-
-        std::vector<uint8_t> Bytes = structPack_Bytes<Frame_Speed_dpkg>(frame);
-        frame.crc_head = crc_8(Bytes.data(),3);
+        frame.crc_head = 0;
         
         frame.speed.data_tag = speed_tag;
-        frame.speed.velocity = speed;
-        frame.speed.yaw =yaw;
-        frame.crc_head = 219;
+        frame.speed.velocity = speed*1000;
+        frame.speed.yaw =yaw*1000;
+        frame.crc_dpkg= 0;
+
         std::vector<uint8_t> Bytes = structPack_Bytes<Frame_Speed_dpkg>(frame);
-        // ROS_INFO("%ld", Bytes.size());
-        // ROS_INFO("%x", Bytes[0]);
-        // ROS_INFO("%x", Bytes[1]);
-        // ROS_INFO("%d", Bytes[2]);
-        // ROS_INFO("%d", Bytes2Num<uint16_t,2>(&Bytes[3]));
-        // ROS_INFO("%x", Bytes[5]);
+
+        uint8_t CRC8  = crc_8(Bytes.data(),FRAME_CALCU_CRC_BYTES);
+        uint16_t CRC16 = crc_16(Bytes.data()+FRAME_INFO_SIZE,speed_dpkg_len);
+
+        /* reset crc value  */
+        setBuffCRCValue(Bytes,FRAME_DPKG_LEN_OFFSET,CRC8);
+        setBuffCRCValue<uint16_t,2>(Bytes,FRAME_INFO_SIZE+speed_dpkg_len,CRC16);
+        // ROS_INFO("%d", CRC16);
+        // ROS_INFO("%d", Bytes2Num<uint16_t,2>(Bytes.data()+FRAME_INFO_SIZE+speed_dpkg_len));
+
+        // for(int i=0;i<Bytes.size();++i)
+        //     ROS_INFO("%d", Bytes[i]);
+        // ROS_INFO("%x", Bytes[5]);      //data_tag
         // ROS_INFO("%.1f",(float) Bytes2Num<int16_t,2>(&Bytes[6])/1000.0);
         // ROS_INFO("%.1f",(float) Bytes2Num<int16_t,2>(&Bytes[8])/1000.0);
+        // ROS_INFO("%d",Bytes2Num<uint16_t,2>(&Bytes[10]));    //crc16
 
-        // size_t send_count=sp_.write(Bytes);
-        // if(send_count < Bytes.size())
-        // {
-        //     ROS_WARN_STREAM("send "<<send_count<<" bytes,but buff have " << Bytes.size() << " bytes");
-        //     serial::Timeout newTimeout =  sp_.getTimeout();
-        //     ROS_WARN_STREAM("try to reset timeout");
-        //     newTimeout.write_timeout_constant+=1;
-        //     sp_.setTimeout(newTimeout);
-        //     ROS_WARN_STREAM("new timeout " <<newTimeout.write_timeout_constant << " ms");
-        // }
+        size_t send_count=sp_.write(Bytes);
+        return send_count==Bytes.size();
     }
 }

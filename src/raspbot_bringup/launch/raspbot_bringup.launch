@@ -22,5 +22,7 @@
         <arg name="baud"             value="$(arg baud)"/>
     </include>
 
+    <!-- <node pkg="raspbot_bringup"  type="raspbot_bringup__test_node" name="test_node" output="screen"/> -->
+
 
 </launch>

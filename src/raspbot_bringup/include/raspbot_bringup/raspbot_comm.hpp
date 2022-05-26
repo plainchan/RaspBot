@@ -61,7 +61,7 @@
 #define FRAME_DPKG_CRC_BYTES        2
 #define FRAME_DPKG_LEN_BYTES        1     
 #define FRAME_INFO_SIZE             (2+FRAME_DPKG_LEN_BYTES+FRAME_HEAD_CRC_BYTES)
-
+#define FRAME_CALCU_CRC_BYTES       (2 + FRAME_DPKG_LEN_BYTES)
 /**
  * @brief 帧缓冲区最大大小
  */
@@ -174,29 +174,54 @@ T Bytes2Num(const uint8_t* p)
  * @return std::vector<uint8_t> 
  */
 template <typename T>
-std::vector<uint8_t> structPack_Bytes(T &T_struct)
+std::vector<uint8_t> structPack_Bytes(T &T_struct,int size=sizeof(T))
 {
-    int size = sizeof(T_struct);
     std::vector<uint8_t> Bytes(size);
     memcpy(Bytes.data(),&T_struct,size);
     return Bytes;
 }
 
 /**
- * @brief 将结构体转换成字节流
+ * @brief 
  * 
- * @tparam T   结构体类型
- * @param[in]  T_struct  结构体变量
- * @return std::vector<uint8_t> 
+ * @tparam T 
+ * @param buff 
+ * @param T_struct 
+ * @param size 
+ * @return uint8_t* 
  */
 template <typename T>
-std::vector<uint8_t> structPack_Bytes(T &T_struct,int size)
+uint8_t* structPack_Bytes(uint8_t* buff,T &T_struct,int size=sizeof(T))
 {
-    std::vector<uint8_t> Bytes(size);
-    memcpy(Bytes.data(),&T_struct,size);
-    return Bytes;
+    memcpy(buff,&T_struct,size);
+    return buff;
 }
 
+void setBuffCRCValue(std::vector<uint8_t> &buff,uint8_t offset,uint8_t value)
+{
+    buff[offset] = value;
+}
+void setBuffCRCValue(uint8_t* buff,uint8_t offset,uint8_t value)
+{
+    buff[offset] = value;
+}
+
+template <typename T,std::size_t N>
+void setBuffCRCValue(uint8_t* buff,uint8_t offset,T value)
+{
+    BytesConv<T,N> conv;
+    conv.number = value;
+    for(int i=0;i<N;++i)
+        buff[offset+i] = conv.bytes[i];
+}
+template <typename T,std::size_t N>
+void setBuffCRCValue(std::vector<uint8_t> &buff,uint8_t offset,T value)
+{
+    BytesConv<T,N> conv;
+    conv.number = value;
+    for(int i=0;i<N;++i)
+        buff[offset+i] = conv.bytes[i];
+}
 
 
 
@@ -234,7 +259,7 @@ typedef struct
     uint8_t      len;
     uint8_t      crc_head;
     Speed_dpkg   speed;
-    uint8_t      crc_dpkg;
+    uint16_t      crc_dpkg;
 }Frame_Speed_dpkg;
 
 #pragma pack()  //结束字节对齐
