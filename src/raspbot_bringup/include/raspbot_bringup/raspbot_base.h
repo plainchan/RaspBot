@@ -30,7 +30,7 @@
 #include "nav_msgs/Odometry.h"
 #include "sensor_msgs/Imu.h"
 #include "raspbot_bringup/raspbot_comm.hpp"
-
+#include "tf2_ros/transform_broadcaster.h"
 
 
 namespace raspbot
@@ -120,18 +120,19 @@ public:
      * 
      * @param imu 
      */
-    void setImuValue(sensor_msgs::Imu &imu);
+    void publishIMU(sensor_msgs::Imu &imu);
 
     /**
      * @brief 计算里程计
      * 
      * @param odom 
      */
-    void calcuOdomValue(nav_msgs::Odometry &odom);
+    void publishTransformAndOdom(nav_msgs::Odometry &odom);
 
-    bool sendFrame_Speed_dpkg(float speed=0.0,float yaw=0.0);
 
-protected:
+    bool sendFrame_Speed_dpkg(double speed=0.0,double yaw=0.0);
+
+private:
 
     /**
      * @brief Nodehandle for publisher and subscriber
@@ -168,6 +169,13 @@ protected:
      */
     ros::Subscriber   twist_sub_;
     std::string       twist_topic_;
+
+    /**
+     * @brief tf坐标变换及广播发布
+     */
+    geometry_msgs::TransformStamped  odomtfs_;
+    tf2_ros::TransformBroadcaster    tfBroadcaster_;
+
 
 
     /**

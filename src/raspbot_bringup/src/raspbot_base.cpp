@@ -1,7 +1,9 @@
 #include "raspbot_bringup/raspbot_base.h"
 #include "raspbot_bringup/crc16.h"
 #include "raspbot_bringup/crc8.h"
-#include <algorithm>
+#include "raspbot_bringup/raspbot_params.h"
+#include "tf2/LinearMath/Quaternion.h"
+#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 
 namespace raspbot
 {
@@ -127,7 +129,7 @@ namespace raspbot
          *        write_timeout_constant     0       buff写入完成后不延时
          *        write_timeout_multiplier   1       buff读取完成后，延时写入的Bytes个时间(根据写入时间延迟*因子)[Recommand]
          */
-        serial::Timeout timeout(serial::Timeout::max(),0,0,2,0); //发送后延时1ms
+        serial::Timeout timeout(serial::Timeout::max(),0,0,2,0); //发送后延时2ms
         sp_.setTimeout(timeout);
 
         try
@@ -163,7 +165,7 @@ namespace raspbot
     void BotBase::periodicUpdate(const ros::TimerEvent &event)
     {
 
-        
+        //  resetParams();
         // read and process serial buff
         size_t buff_size = sp_.available();
         if (buff_size)
@@ -197,8 +199,7 @@ namespace raspbot
             {
                 if (parse_stream(stream_msgs, RxBuff[i]) == 1)
                 {   
-                    setImuValue(imu_);
-                    imu_pub_.publish(imu_);
+                    
                     if(publish_odom_)
                     {
                         // calcuOdomValue(wheel_odom_);
@@ -206,7 +207,7 @@ namespace raspbot
                     }
 
                     /*  show params */
-#define debug_robot_params
+// #define debug_robot_params
 #ifdef  debug_robot_params
                     static int count=0;
                     if(++count>frequency_)
@@ -266,7 +267,7 @@ namespace raspbot
         else if (bytesCount == FRAME_HEAD_CRC_OFFSET) // crc 帧头校验
         {
             stream_msgs.crc = stream_msgs.stream_buff[bytesCount - 1]; //crc8
-            // stream_msgs.crc = Bytes2Num<uint16_t,2>(&stream_msgs.stream_buff[bytesCount - 2]); //crc16
+            // stream_msgs.crc = Byte2U16(&stream_msgs.stream_buff[bytesCount - 2]); //crc16
             if(stream_msgs.crc!=crc_8(stream_msgs.stream_buff,FRAME_CALCU_CRC_BYTES))
             {
                 ROS_WARN_STREAM("Erro of header's CRC");
@@ -278,7 +279,7 @@ namespace raspbot
         else if (bytesCount >= FRAME_INFO_SIZE + stream_msgs.len+FRAME_DPKG_CRC_BYTES) 
         {
             
-            stream_msgs.crc = Bytes2Num<uint16_t,2>(&stream_msgs.stream_buff[bytesCount-FRAME_DPKG_CRC_BYTES]);
+            stream_msgs.crc = Byte2U16(&stream_msgs.stream_buff[bytesCount-FRAME_DPKG_CRC_BYTES]);
             bytesCount = 0;
             if(stream_msgs.crc!=crc_16(&stream_msgs.stream_buff[FRAME_INFO_SIZE],stream_msgs.len))
             {
@@ -294,7 +295,7 @@ namespace raspbot
     int BotBase::decode_frame(Stream_msgs &stream_msgs)
     {
         uint8_t offset = 0;
-        uint8_t *buff = &stream_msgs.stream_buff[FRAME_INFO_SIZE];
+        const uint8_t *buff = &stream_msgs.stream_buff[FRAME_INFO_SIZE];
         uint8_t len = stream_msgs.len;
         while(offset < len)
         {
@@ -304,62 +305,61 @@ namespace raspbot
 
                 robot_msgs.voltage = ((float)buff[++offset]) / 10.0;
 
-                robot_msgs.l_encoder_pulse = Bytes2Num<int16_t,2>(&buff[offset+1]);offset+=2;
+                robot_msgs.l_encoder_pulse = Byte2INT16(&buff[offset+1]);offset+=2;
+                robot_msgs.r_encoder_pulse = Byte2INT16(&buff[offset+1]);offset+=2;
 
-                robot_msgs.r_encoder_pulse = Bytes2Num<int16_t,2>(&buff[offset+1]);offset+=2;
+                robot_msgs.acc[0] = Byte2Float(&buff[offset+1]);offset+=4;
+                robot_msgs.acc[1] = Byte2Float(&buff[offset+1]);offset+=4;
+                robot_msgs.acc[2] = Byte2Float(&buff[offset+1]);offset+=4;
 
-                robot_msgs.acc[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-                robot_msgs.acc[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-                robot_msgs.acc[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-
-                robot_msgs.gyr[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-                robot_msgs.gyr[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-                robot_msgs.gyr[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.gyr[0] = Byte2Float(&buff[offset+1]);offset+=4;
+                robot_msgs.gyr[1] = Byte2Float(&buff[offset+1]);offset+=4;
+                robot_msgs.gyr[2] = Byte2Float(&buff[offset+1]);offset+=4;
         #ifdef  imu_mag
-                robot_msgs.mag[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-                robot_msgs.mag[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-                robot_msgs.mag[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.mag[0] = Byte2Float(&buff[offset+1]);offset+=4;
+                robot_msgs.mag[1] = Byte2Float(&buff[offset+1]);offset+=4;
+                robot_msgs.mag[2] = Byte2Float(&buff[offset+1]);offset+=4;
         #endif          
-                robot_msgs.elu[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-                robot_msgs.elu[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-                robot_msgs.elu[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.elu[0] = Byte2Float(&buff[offset+1]);offset+=4;
+                robot_msgs.elu[1] = Byte2Float(&buff[offset+1]);offset+=4;
+                robot_msgs.elu[2] = Byte2Float(&buff[offset+1]);offset+=4;
                 break; /* robot_tag */
             case voltage_tag:
                 robot_msgs.voltage = ((float)buff[++offset])/10.0;
                 break; /* voltage_tag */
             case encoder_tag:
-                robot_msgs.l_encoder_pulse = Bytes2Num<int16_t,2>(&buff[offset+1]);offset+=2;
-                robot_msgs.r_encoder_pulse = Bytes2Num<int16_t,2>(&buff[offset+1]);offset+=2;
+                robot_msgs.l_encoder_pulse = Byte2INT16(&buff[offset+1]);offset+=2;
+                robot_msgs.r_encoder_pulse = Byte2INT16(&buff[offset+1]);offset+=2;
                 break; /* encoder_tag */
             case imu_tag:
-                robot_msgs.acc[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-                robot_msgs.acc[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-                robot_msgs.acc[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.acc[0] = Byte2Float(&buff[offset+1]);offset+=4;
+                robot_msgs.acc[1] = Byte2Float(&buff[offset+1]);offset+=4;
+                robot_msgs.acc[2] = Byte2Float(&buff[offset+1]);offset+=4;
 
-                robot_msgs.gyr[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-                robot_msgs.gyr[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-                robot_msgs.gyr[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.gyr[0] = Byte2Float(&buff[offset+1]);offset+=4;
+                robot_msgs.gyr[1] = Byte2Float(&buff[offset+1]);offset+=4;
+                robot_msgs.gyr[2] = Byte2Float(&buff[offset+1]);offset+=4;
         #ifdef  imu_mag
-                robot_msgs.mag[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-                robot_msgs.mag[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-                robot_msgs.mag[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.mag[0] = Byte2Float(&buff[offset+1]);offset+=4;
+                robot_msgs.mag[1] = Byte2Float(&buff[offset+1]);offset+=4;
+                robot_msgs.mag[2] = Byte2Float(&buff[offset+1]);offset+=4;
         #endif          
-                robot_msgs.elu[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-                robot_msgs.elu[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-                robot_msgs.elu[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.elu[0] = Byte2Float(&buff[offset+1]);offset+=4;
+                robot_msgs.elu[1] = Byte2Float(&buff[offset+1]);offset+=4;
+                robot_msgs.elu[2] = Byte2Float(&buff[offset+1]);offset+=4;
                 break; /* imu_tag */
             case imu_sensor_tag:
-                robot_msgs.acc[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-                robot_msgs.acc[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-                robot_msgs.acc[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.acc[0] = Byte2Float(&buff[offset+1]);offset+=4;
+                robot_msgs.acc[1] = Byte2Float(&buff[offset+1]);offset+=4;
+                robot_msgs.acc[2] = Byte2Float(&buff[offset+1]);offset+=4;
 
-                robot_msgs.gyr[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-                robot_msgs.gyr[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-                robot_msgs.gyr[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.gyr[0] = Byte2Float(&buff[offset+1]);offset+=4;
+                robot_msgs.gyr[1] = Byte2Float(&buff[offset+1]);offset+=4;
+                robot_msgs.gyr[2] = Byte2Float(&buff[offset+1]);offset+=4;
         #ifdef imu_mag
-                robot_msgs.mag[0] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-                robot_msgs.mag[1] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
-                robot_msgs.mag[2] = Bytes2Num<float,4>(&buff[offset+1]);offset+=4;
+                robot_msgs.mag[0] = Byte2Float(&buff[offset+1]);offset+=4;
+                robot_msgs.mag[1] = Byte2Float(&buff[offset+1]);offset+=4;
+                robot_msgs.mag[2] = Byte2Float(&buff[offset+1]);offset+=4;
         #endif
                 break; /* imu_sensor_tag */
             default:
@@ -379,7 +379,7 @@ namespace raspbot
         }
     }
 
-    void BotBase::setImuValue(sensor_msgs::Imu &imu)
+    void BotBase::publishIMU(sensor_msgs::Imu &imu)
     {
         imu.header.frame_id = imu_frame_;
         imu.header.seq = 100;
@@ -397,22 +397,83 @@ namespace raspbot
 
         imu.angular_velocity_covariance = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-        imu.orientation.w = 0;
-        imu.orientation.x = 0;
-        imu.orientation.y = 0;
-        imu.orientation.z = 0;
+        /* 四元数 */
+        tf2::Quaternion qtn;
+        qtn.setRPY(robot_msgs.elu[0],robot_msgs.elu[1],robot_msgs.elu[2]);
+        imu.orientation.w = qtn.getW();
+        imu.orientation.x = qtn.getX();
+        imu.orientation.y = qtn.getY();
+        imu.orientation.z = qtn.getZ();
 
         imu.orientation_covariance = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-    }
-    void BotBase::calcuOdomValue(nav_msgs::Odometry &odom)
-    {
-        // odom.child_frame_id=;
-        // odom.header=;
-        // odom.twist=;
-        // odom.pose=;
+
+        //publish
+        imu_pub_.publish(imu);
     }
 
-    bool BotBase::sendFrame_Speed_dpkg(float speed,float yaw)
+    void BotBase::publishTransformAndOdom(nav_msgs::Odometry &odom)
+    {
+        double l_motor_speed = robot_msgs.l_encoder_pulse*wheelRadius/PPR;
+        double r_motor_speed = robot_msgs.l_encoder_pulse*wheelRadius/PPR;
+        double linearSpeed = (l_motor_speed+r_motor_speed)/2;
+        double steeringAngle = (l_motor_speed+r_motor_speed)/2;
+        
+
+        /* publish transform  */
+        odomtfs_.header.frame_id = odom_frame_;
+        odomtfs_.header.seq = 10;
+        odomtfs_.header.stamp = ros::Time::now();
+
+        odomtfs_.child_frame_id = base_frame_;
+        
+        odomtfs_.transform.translation.x += 0.0;
+        odomtfs_.transform.translation.y += 0.0;
+        odomtfs_.transform.translation.z = 0.0;
+
+        odomtfs_.transform.rotation.w = 0.0;
+        odomtfs_.transform.rotation.x = 0.0;
+        odomtfs_.transform.rotation.y = 0.0;
+        odomtfs_.transform.rotation.z = 0.0;
+
+        tfBroadcaster_.sendTransform(odomtfs_);  //publsih
+
+
+        /*  publish odom  */
+        odom.header.frame_id=odom_frame_;
+        odom.header.seq=50;
+        odom.header.stamp = ros::Time::now();
+
+        odom.child_frame_id=base_frame_;
+
+        /**  The pose in this message should be specified 
+         *  in the coordinate frame given by header.frame_id. 
+         */
+        odom.pose.pose.position.x=0.0;
+        odom.pose.pose.position.y=0.0;
+        odom.pose.pose.position.z=0.0;
+        odom.pose.pose.orientation.w=0.0;
+        odom.pose.pose.orientation.x=0.0;
+        odom.pose.pose.orientation.y=0.0;
+        odom.pose.pose.orientation.z=0.0;    //the position  and orientation of the car in the odom frame
+        odom.pose.covariance={0};    
+
+        /**
+         * The twist in this message should be specified 
+         * in the coordinate frame given by the child_frame_id
+         */  
+        odom.twist.twist.linear.x=0;
+        odom.twist.twist.linear.y=0;
+        odom.twist.twist.linear.z=0;
+        odom.twist.twist.angular.x=0;
+        odom.twist.twist.angular.y=0;
+        odom.twist.twist.angular.z=0;      //the speed  and orientation of the car in the car frame
+
+        odom.twist.covariance={0};
+        
+        odom_pub_.publish(odom);
+    }
+
+    bool BotBase::sendFrame_Speed_dpkg(double speed,double yaw)
     {
         
         Frame_Speed_dpkg frame;
@@ -436,14 +497,14 @@ namespace raspbot
         setBuffCRCValue(Bytes,FRAME_DPKG_LEN_OFFSET,CRC8);
         setBuffCRCValue<uint16_t,2>(Bytes,FRAME_INFO_SIZE+speed_dpkg_len,CRC16);
         // ROS_INFO("%d", CRC16);
-        // ROS_INFO("%d", Bytes2Num<uint16_t,2>(Bytes.data()+FRAME_INFO_SIZE+speed_dpkg_len));
+        // ROS_INFO("%d", Byte2U16(Bytes.data()+FRAME_INFO_SIZE+speed_dpkg_len));
 
         // for(int i=0;i<Bytes.size();++i)
         //     ROS_INFO("%d", Bytes[i]);
         // ROS_INFO("%x", Bytes[5]);      //data_tag
-        // ROS_INFO("%.1f",(float) Bytes2Num<int16_t,2>(&Bytes[6])/1000.0);
-        // ROS_INFO("%.1f",(float) Bytes2Num<int16_t,2>(&Bytes[8])/1000.0);
-        // ROS_INFO("%d",Bytes2Num<uint16_t,2>(&Bytes[10]));    //crc16
+        // ROS_INFO("%.1f",(float) Byte2INT16(&Bytes[6])/1000.0);
+        // ROS_INFO("%.1f",(float) Byte2INT16(&Bytes[8])/1000.0);
+        // ROS_INFO("%d",Byte2U16(&Bytes[10]));    //crc16
 
         size_t send_count=sp_.write(Bytes);
         return send_count==Bytes.size();

@@ -42,7 +42,6 @@ static uint8_t crc8_tab[] = {
  * The function crc_8() calculates the 8 bit wide CRC of an input string of a
  * given length.
  */
-
 uint8_t crc_8( const unsigned char *input_str, size_t num_bytes ) {
 
 	uint8_t crc;
@@ -67,7 +66,6 @@ uint8_t crc_8( const unsigned char *input_str, size_t num_bytes ) {
  * update_crc_8() calculates and returns the new actual CRC value of the data
  * comming in.
  */
-
 uint8_t update_crc_8( unsigned char crc, unsigned char val ) {
 
 	return crc8_tab[val ^ crc];

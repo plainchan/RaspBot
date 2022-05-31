@@ -44,6 +44,7 @@
 #include <cstdint>
 #include <vector>
 #include <cstring>
+#include <functional>
 
 #define imu_mag      //IMU是否带磁力计
 
@@ -139,7 +140,7 @@ typedef struct receiveStream
 
 
 /**
- * @brief  共享内存，将N bytes内存数据转换成特定数据
+ * @brief  共享内存，将N bytes内存数据与特定数据互相转换
  * 
  * @tparam T  数据类型
  * @tparam N  数据类型大小
@@ -150,8 +151,9 @@ union BytesConv
     uint8_t bytes[N];
     T       number;
 };
+
 /**
- * @brief  对共用体赋值
+ * @brief  将N bytes内存数据转换成特定数据
  * 
  * @tparam T 数据类型
  * @tparam N 数据类型大小
@@ -159,13 +161,22 @@ union BytesConv
  * @return T 返回内存数据转换的制定数据类型的值
  */
 template <typename T,std::size_t N>
-T Bytes2Num(const uint8_t* p)
+inline T Bytes2Num(const uint8_t* p)
 {
     BytesConv<T,N> conv;
     for(int i=0;i<N;++i)
        conv.bytes[i]=p[i];
     return conv.number;
 }
+
+/*  函数包装  */
+
+std::function <float(const uint8_t*)> Byte2Float = Bytes2Num<float,4>;
+std::function <int16_t(const uint8_t*)> Byte2INT16 = Bytes2Num<int16_t,2>;
+std::function <uint16_t(const uint8_t*)> Byte2U16 = Bytes2Num<uint16_t,2>;
+
+
+
 /**
  * @brief 将结构体转换成字节流
  * 
@@ -174,7 +185,7 @@ T Bytes2Num(const uint8_t* p)
  * @return std::vector<uint8_t> 
  */
 template <typename T>
-std::vector<uint8_t> structPack_Bytes(T &T_struct,int size=sizeof(T))
+inline std::vector<uint8_t> structPack_Bytes(T &T_struct,int size=sizeof(T))
 {
     std::vector<uint8_t> Bytes(size);
     memcpy(Bytes.data(),&T_struct,size);
@@ -191,31 +202,65 @@ std::vector<uint8_t> structPack_Bytes(T &T_struct,int size=sizeof(T))
  * @return uint8_t* 
  */
 template <typename T>
-uint8_t* structPack_Bytes(uint8_t* buff,T &T_struct,int size=sizeof(T))
+inline uint8_t* structPack_Bytes(uint8_t* buff,T &T_struct,int size=sizeof(T))
 {
     memcpy(buff,&T_struct,size);
     return buff;
 }
 
-void setBuffCRCValue(std::vector<uint8_t> &buff,uint8_t offset,uint8_t value)
-{
-    buff[offset] = value;
-}
-void setBuffCRCValue(uint8_t* buff,uint8_t offset,uint8_t value)
+/**
+ * @brief Set the Buff CRC Value 
+ * 
+ * @param buff 
+ * @param offset 
+ * @param value 
+ */
+inline void setBuffCRCValue(std::vector<uint8_t> &buff,uint8_t offset,uint8_t value)
 {
     buff[offset] = value;
 }
 
+/**
+ * @brief Set the Buff CRC Value 
+ * 
+ * @param buff 
+ * @param offset 
+ * @param value 
+ */
+inline void setBuffCRCValue(uint8_t* buff,uint8_t offset,uint8_t value)
+{
+    buff[offset] = value;
+}
+
+/**
+ * @brief Set the Buff CRC Value
+ * 
+ * @tparam T 
+ * @tparam N 
+ * @param buff 
+ * @param offset 
+ * @param value 
+ */
 template <typename T,std::size_t N>
-void setBuffCRCValue(uint8_t* buff,uint8_t offset,T value)
+inline void setBuffCRCValue(uint8_t* buff,uint8_t offset,T value)
 {
     BytesConv<T,N> conv;
     conv.number = value;
     for(int i=0;i<N;++i)
         buff[offset+i] = conv.bytes[i];
 }
+
+/**
+ * @brief Set the Buff C R C Value object
+ * 
+ * @tparam T 
+ * @tparam N 
+ * @param buff 
+ * @param offset 
+ * @param value 
+ */
 template <typename T,std::size_t N>
-void setBuffCRCValue(std::vector<uint8_t> &buff,uint8_t offset,T value)
+inline void setBuffCRCValue(std::vector<uint8_t> &buff,uint8_t offset,T value)
 {
     BytesConv<T,N> conv;
     conv.number = value;
@@ -259,7 +304,7 @@ typedef struct
     uint8_t      len;
     uint8_t      crc_head;
     Speed_dpkg   speed;
-    uint16_t      crc_dpkg;
+    uint16_t     crc_dpkg;
 }Frame_Speed_dpkg;
 
 #pragma pack()  //结束字节对齐
