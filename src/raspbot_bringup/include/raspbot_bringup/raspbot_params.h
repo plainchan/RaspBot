@@ -11,15 +11,16 @@
 #define wheelTrack               (float)0.1       //轮距
 #define wheelRadius                    0.02       //轮胎半径
 
-#define intervalTimer             0.01            //单片机定时器中断
+#define intervalTimer             0.01            //单片机定时器中断 s
 
+#define deg_to_rad               0.017453292
 
+/* imu  */
 
-
-
-
-
-
+#define  accRatio           (double)2*16/65536                  // ±2 ±4 ±8 ±16
+#define  gyrRatio           (double)deg_to_rad*2*2000/65536     // ±250 ±500 ±1000 ±2000
+#define  magRatio           (double)2*4800/16384                // ±4800
+#define  eluRatio           (double)deg_to_rad*2*180/65536      // ±180
 
 
 

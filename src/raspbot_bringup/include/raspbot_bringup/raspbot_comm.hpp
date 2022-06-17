@@ -46,7 +46,7 @@
 #include <cstring>
 #include <functional>
 
-#define imu_mag      //IMU是否带磁力计
+// #define imu_mag      //IMU是否带磁力计
 
 
 /**
@@ -95,6 +95,7 @@
 #define encoder_tag              0xC0
 #define imu_tag                  0xD0
 #define imu_sensor_tag           0xD1
+#define imu_raw_tag              0xD2
 #define voltage_tag              0xE0  
 
 /**

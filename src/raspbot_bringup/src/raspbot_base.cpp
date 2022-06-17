@@ -4,7 +4,7 @@
 #include "raspbot_bringup/raspbot_params.h"
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
-
+#include "cmath"
 namespace raspbot
 {
 
@@ -199,7 +199,7 @@ namespace raspbot
             {
                 if (parse_stream(stream_msgs, RxBuff[i]) == 1)
                 {   
-                    
+                    publishIMU(imu_);
                     if(publish_odom_)
                     {
                         // calcuOdomValue(wheel_odom_);
@@ -207,7 +207,7 @@ namespace raspbot
                     }
 
                     /*  show params */
-// #define debug_robot_params
+#define debug_robot_params
 #ifdef  debug_robot_params
                     static int count=0;
                     if(++count>frequency_)
@@ -362,6 +362,24 @@ namespace raspbot
                 robot_msgs.mag[2] = Byte2Float(&buff[offset+1]);offset+=4;
         #endif
                 break; /* imu_sensor_tag */
+            case imu_raw_tag:
+                robot_msgs.acc[0] = Byte2INT16(&buff[offset+1])*accRatio;offset+=2;
+                robot_msgs.acc[1] = Byte2INT16(&buff[offset+1])*accRatio;offset+=2;
+                robot_msgs.acc[2] = Byte2INT16(&buff[offset+1])*accRatio;offset+=2;
+
+                robot_msgs.gyr[0] = Byte2INT16(&buff[offset+1])*gyrRatio;offset+=2;
+                robot_msgs.gyr[1] = Byte2INT16(&buff[offset+1])*gyrRatio;offset+=2;
+                robot_msgs.gyr[2] = Byte2INT16(&buff[offset+1])*gyrRatio;offset+=2;
+        #ifdef  imu_mag
+                robot_msgs.mag[0] = Byte2INT16(&buff[offset+1])*magRatio;offset+=2;
+                robot_msgs.mag[1] = Byte2INT16(&buff[offset+1])*magRatio;offset+=2;
+                robot_msgs.mag[2] = Byte2INT16(&buff[offset+1])*magRatio;offset+=2;
+        #endif          
+                robot_msgs.elu[0] = Byte2INT16(&buff[offset+1])*eluRatio;offset+=2;
+                robot_msgs.elu[1] = Byte2INT16(&buff[offset+1])*eluRatio;offset+=2;
+                robot_msgs.elu[2] = Byte2INT16(&buff[offset+1])*eluRatio;offset+=2;
+                break; /* imu_raw_tag */
+
             default:
                 ++offset;
                 break; /* default */
@@ -399,7 +417,11 @@ namespace raspbot
 
         /* 四元数 */
         tf2::Quaternion qtn;
-        qtn.setRPY(robot_msgs.elu[0],robot_msgs.elu[1],robot_msgs.elu[2]);
+        static double roll_offset = robot_msgs.elu[0];
+        static double pitch_offset = robot_msgs.elu[1];
+        static double yaw_offset = robot_msgs.elu[2];
+        qtn.setRPY(robot_msgs.elu[0]-roll_offset,robot_msgs.elu[1]-pitch_offset,robot_msgs.elu[2]-yaw_offset);
+   
         imu.orientation.w = qtn.getW();
         imu.orientation.x = qtn.getX();
         imu.orientation.y = qtn.getY();
@@ -413,11 +435,13 @@ namespace raspbot
 
     void BotBase::publishTransformAndOdom(nav_msgs::Odometry &odom)
     {
+
         double l_motor_speed = robot_msgs.l_encoder_pulse*wheelRadius/PPR;
-        double r_motor_speed = robot_msgs.l_encoder_pulse*wheelRadius/PPR;
+        double r_motor_speed = robot_msgs.r_encoder_pulse*wheelRadius/PPR;
         double linearSpeed = (l_motor_speed+r_motor_speed)/2;
-        double steeringAngle = (l_motor_speed+r_motor_speed)/2;
-        
+        double angularSpeed= asin((r_motor_speed-l_motor_speed)/wheelTrack);
+        double steeringAngle = intervalTimer*angularSpeed;
+        double turnRadius = linearSpeed/angularSpeed;
 
         /* publish transform  */
         odomtfs_.header.frame_id = odom_frame_;
@@ -426,8 +450,8 @@ namespace raspbot
 
         odomtfs_.child_frame_id = base_frame_;
         
-        odomtfs_.transform.translation.x += 0.0;
-        odomtfs_.transform.translation.y += 0.0;
+        odomtfs_.transform.translation.x = 0.0;
+        odomtfs_.transform.translation.y = 0.0;
         odomtfs_.transform.translation.z = 0.0;
 
         odomtfs_.transform.rotation.w = 0.0;
@@ -461,7 +485,7 @@ namespace raspbot
          * The twist in this message should be specified 
          * in the coordinate frame given by the child_frame_id
          */  
-        odom.twist.twist.linear.x=0;
+        odom.twist.twist.linear.x=linearSpeed;
         odom.twist.twist.linear.y=0;
         odom.twist.twist.linear.z=0;
         odom.twist.twist.angular.x=0;
