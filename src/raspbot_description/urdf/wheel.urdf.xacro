@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="raspbot_wheel">
+
+
+    <link name="${wheel_prefix}_wheel_link">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://raspbot_description/meshes/wheel.dae" />
+            </geometry>
+        </visual>
+    </link>
+</robot>

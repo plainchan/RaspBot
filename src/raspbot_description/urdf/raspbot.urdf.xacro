@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+
+<robot name="raspbot" xmlns:xacro="http://ros.org/wiki/xacro">
+
+
+    <link name="base_link">
+        <visual>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+            <mesh filename="package://raspbot_description/meshes/rplidar.dae" />
+        </geometry>
+        </visual>
+    </link>
+    <!-- <xacro:include filename="$(find husky_description)/urdf/wheel.urdf.xacro" /> -->
+
+    
+
+</robot>
