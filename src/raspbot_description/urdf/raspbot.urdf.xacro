@@ -7,7 +7,7 @@
         <visual>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
-            <mesh filename="package://raspbot_description/meshes/rplidar.dae" />
+            <mesh filename="package://raspbot_description/meshes/baseH.dae" />
         </geometry>
         </visual>
     </link>
