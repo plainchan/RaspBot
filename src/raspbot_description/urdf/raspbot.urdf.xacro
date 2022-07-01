@@ -2,17 +2,110 @@
 
 <robot name="raspbot" xmlns:xacro="http://ros.org/wiki/xacro">
 
+    <xacro:property name="M_PI" value="3.1415916"/>
+
+    <xacro:include filename="$(find raspbot_description)/urdf/wheel.urdf.xacro" />
+    <xacro:include filename="$(find raspbot_description)/urdf/omniwheel.urdf.xacro" />
+    <xacro:include filename="$(find raspbot_description)/urdf/rplidar.urdf.xacro" />
+
+
+    <xacro:property name="base_footprint_offset" value="-0.049" />
+
+    <!-- Wheel Properties -->
+    <xacro:property name="wheel_length" value="0.027" />
+    <xacro:property name="wheel_radius" value="0.0335" />
+
+    <!-- Wheel Mounting Positions -->
+    <xacro:property name="wheeltrack" value="0.203" />
+    <xacro:property name="wheel_vertical_offset" value="0.0165" />
+    <xacro:property name="wheel_horizontal_offset" value="0.068" />
+
+    <!-- omniWheel Mounting Positions -->
+    <xacro:property name="omniwheel_x_offset" value="-0.0455" />
+    <xacro:property name="omniwheel_vertical_offset" value="-0.006" />
+    
 
     <link name="base_link">
         <visual>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
-            <mesh filename="package://raspbot_description/meshes/baseH.dae" />
+            <mesh filename="package://raspbot_description/meshes/base.dae" />
         </geometry>
         </visual>
     </link>
-    <!-- <xacro:include filename="$(find husky_description)/urdf/wheel.urdf.xacro" /> -->
 
+    <link name="base_footprint"/>
+    <joint name="base_footprint_joint" type="fixed">
+        <origin xyz="0 0 ${base_footprint_offset}" rpy="0 0 0" />
+        <parent link="base_link" />
+        <child link="base_footprint" />
+    </joint>
     
+    <!--  wheel  -->
+    <xacro:raspbot_wheel wheel_prefix="left">
+        <origin xyz="${wheel_horizontal_offset} ${wheeltrack/2} ${-wheel_vertical_offset}" rpy="0 0 0" />
+    </xacro:raspbot_wheel>
+    <xacro:raspbot_wheel wheel_prefix="right">
+        <origin xyz="${wheel_horizontal_offset} ${-wheeltrack/2} ${-wheel_vertical_offset}" rpy="${M_PI} 0 0" />
+    </xacro:raspbot_wheel>
+
+    <!-- omniwheel -->
+    <xacro:raspbot_omniwheel wheel_prefix="rear">
+        <origin xyz="${omniwheel_x_offset} 0 ${omniwheel_vertical_offset}" rpy="0 0 ${M_PI}" />
+    </xacro:raspbot_omniwheel>
+
+    <xacro:rplidar frame="lidar_link" topic="scan" robot_namespace="$(arg robot_namespace)"/>
+    <joint name="base_lidar_joint" type="fixed">
+        <origin xyz="0.0693 0 0.0807" rpy="0 0 0" />
+        <parent link="base_link" />
+        <child link="lidar_link" />
+    </joint> 
+
+
+    <!-- <link name="imu_link"/>
+    <joint name="base_footprint_joint" type="fixed">
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <parent link="base_link" />
+        <child link="imu_link" />
+    </joint> -->
+
+    <!--  gazebo  -->
+    <gazebo>
+        <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+            <robotNamespace>$(arg robot_namespace)</robotNamespace>
+            <legacyModeNS>true</legacyModeNS>
+        </plugin>
+    </gazebo>
+    
+    <!-- <gazebo>
+        <plugin name="imu_controller" filename="libhector_gazebo_ros_imu.so">
+            <robotNamespace>$(arg robot_namespace)</robotNamespace>
+            <updateRate>50.0</updateRate>
+            <bodyName>base_link</bodyName>
+            <topicName>imu/data</topicName>
+            <accelDrift>0.005 0.005 0.005</accelDrift>
+            <accelGaussianNoise>0.005 0.005 0.005</accelGaussianNoise>
+            <rateDrift>0.005 0.005 0.005 </rateDrift>
+            <rateGaussianNoise>0.005 0.005 0.005 </rateGaussianNoise>
+            <headingDrift>0.005</headingDrift>
+            <headingGaussianNoise>0.005</headingGaussianNoise>
+        </plugin>
+    </gazebo> -->
+
+  <!-- <gazebo>
+    <plugin name="gps_controller" filename="libhector_gazebo_ros_gps.so">
+      <robotNamespace>$(arg robot_namespace)</robotNamespace>
+      <updateRate>40</updateRate>
+      <bodyName>base_link</bodyName>
+      <frameId>base_link</frameId>
+      <topicName>navsat/fix</topicName>
+      <velocityTopicName>navsat/vel</velocityTopicName>
+      <referenceLatitude>49.9</referenceLatitude>
+      <referenceLongitude>8.9</referenceLongitude>
+      <referenceHeading>0</referenceHeading>
+      <referenceAltitude>0</referenceAltitude>
+      <drift>0.0001 0.0001 0.0001</drift>
+    </plugin>
+  </gazebo> -->
 
 </robot>

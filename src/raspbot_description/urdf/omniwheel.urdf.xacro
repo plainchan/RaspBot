@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 
-<robot xmlns:xacro="http://ros.org/wiki/xacro" name="raspbot_wheel" >
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="raspbot_omniwheel" >
 
-    <xacro:macro name="raspbot_wheel" params="wheel_prefix *joint_pose">
-        <link name="${wheel_prefix}_wheel_link">
+    <xacro:macro name="raspbot_omniwheel" params="wheel_prefix *joint_pose">
+        <link name="${wheel_prefix}_omniwheel_link">
         	<inertial>
 				<mass value="0.167" />
 				<origin xyz="0 0 0" />
@@ -12,14 +12,14 @@
             <visual>
                 <origin xyz="0 0 0" rpy="0 0 0" />
                 <geometry>
-                    <mesh filename="package://raspbot_description/meshes/wheel.dae" />
+                    <mesh filename="package://raspbot_description/meshes/omniwheel.dae" />
                 </geometry>
             </visual>
         </link>
 
         <joint name="${wheel_prefix}_wheel" type="continuous">
             <parent link="base_link"/>
-            <child link="${wheel_prefix}_wheel_link"/>
+            <child link="${wheel_prefix}_omniwheel_link"/>
             <xacro:insert_block name="joint_pose"/>
             <axis xyz="0 1 0" rpy="0 0 0" />
         </joint>
