@@ -17,12 +17,12 @@
 
     <!-- Wheel Mounting Positions -->
     <xacro:property name="wheeltrack" value="0.203" />
-    <xacro:property name="wheel_vertical_offset" value="0.0165" />
-    <xacro:property name="wheel_horizontal_offset" value="0.068" />
+    <xacro:property name="wheel_vertical_offset" value="-0.0145" />
+    <xacro:property name="wheel_horizontal_offset" value="0.0769" />
 
     <!-- omniWheel Mounting Positions -->
     <xacro:property name="omniwheel_x_offset" value="-0.0455" />
-    <xacro:property name="omniwheel_vertical_offset" value="-0.006" />
+    <xacro:property name="omniwheel_vertical_offset" value="-0.01" />
     
 
     <link name="base_link">
@@ -43,10 +43,10 @@
     
     <!--  wheel  -->
     <xacro:raspbot_wheel wheel_prefix="left">
-        <origin xyz="${wheel_horizontal_offset} ${wheeltrack/2} ${-wheel_vertical_offset}" rpy="0 0 0" />
+        <origin xyz="${wheel_horizontal_offset} ${wheeltrack/2} ${wheel_vertical_offset}" rpy="0 0 0" />
     </xacro:raspbot_wheel>
     <xacro:raspbot_wheel wheel_prefix="right">
-        <origin xyz="${wheel_horizontal_offset} ${-wheeltrack/2} ${-wheel_vertical_offset}" rpy="${M_PI} 0 0" />
+        <origin xyz="${wheel_horizontal_offset} ${-wheeltrack/2} ${wheel_vertical_offset}" rpy="${M_PI} 0 0" />
     </xacro:raspbot_wheel>
 
     <!-- omniwheel -->
@@ -56,7 +56,7 @@
 
     <xacro:rplidar frame="lidar_link" topic="scan" robot_namespace="$(arg robot_namespace)"/>
     <joint name="base_lidar_joint" type="fixed">
-        <origin xyz="0.0693 0 0.0807" rpy="0 0 0" />
+        <origin xyz="0.0705 0 0.0807" rpy="0 0 0" />
         <parent link="base_link" />
         <child link="lidar_link" />
     </joint> 
