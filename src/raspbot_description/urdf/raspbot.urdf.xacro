@@ -24,14 +24,29 @@
     <xacro:property name="omniwheel_x_offset" value="-0.0455" />
     <xacro:property name="omniwheel_vertical_offset" value="-0.01" />
     
+    <!-- lidar Mounting Positions -->
+    <xacro:property name="lidar_x_offset" value="0.0705" />
+    <xacro:property name="lidar_vertical_offset" value="0.0807" />
 
     <link name="base_link">
         <visual>
-        <origin xyz="0 0 0" rpy="0 0 0" />
-        <geometry>
-            <mesh filename="package://raspbot_description/meshes/base.dae" />
-        </geometry>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://raspbot_description/meshes/base.dae" />
+            </geometry>
         </visual>
+        <collision>
+            <origin xyz="${( husky_front_bumper_extend - husky_rear_bumper_extend ) / 2.0} 0 ${base_z_size/4}" rpy="0 0 0" />
+            <geometry>
+                <box size="${ base_x_size + husky_front_bumper_extend + husky_rear_bumper_extend } ${base_y_size} ${base_z_size/2}"/>
+            </geometry>
+        </collision>
+        <collision>
+            <origin xyz="0 0 ${base_z_size*3/4-0.01}" rpy="0 0 0" />
+            <geometry>
+                <box size="${base_x_size*4/5} ${base_y_size} ${base_z_size/2-0.02}"/>
+            </geometry>
+        </collision>
     </link>
 
     <link name="base_footprint"/>
@@ -56,7 +71,7 @@
 
     <xacro:rplidar frame="lidar_link" topic="scan" robot_namespace="$(arg robot_namespace)"/>
     <joint name="base_lidar_joint" type="fixed">
-        <origin xyz="0.0705 0 0.0807" rpy="0 0 0" />
+        <origin xyz="${lidar_x_offset} 0 ${lidar_vertical_offset}" rpy="0 0 0" />
         <parent link="base_link" />
         <child link="lidar_link" />
     </joint> 

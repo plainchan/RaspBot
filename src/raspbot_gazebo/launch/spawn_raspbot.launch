@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+
+<launch>
+
+    <!-- Spawn raspbot in gazebo -->
+    <node name="spawn_raspbot_model" pkg="gazebo_ros" type="spawn_model"
+        args="-x $(arg x)
+              -y $(arg y)
+              -z $(arg z)
+              -Y $(arg yaw)
+              -unpause
+              -urdf
+              -param robot_description
+              -model husky
+              -robot_namespace $(arg robot_namespace)" />
+
+    
+
+</launch>
