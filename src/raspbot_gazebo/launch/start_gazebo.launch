@@ -4,8 +4,9 @@
 
     <include file="$(find raspbot_gazebo)/launch/spawn_raspbot.launch"/>
     
+    <arg name="world" default="$(find raspbot_gazebo)/worlds/track.world"/> 
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
-        <arg name="world_name" value="$(find raspbot_gazebo)/worlds/empty.world"/> 
+        <arg name="world_name" value="$(arg world)"/> 
         <arg name="paused" value="false"/>
         <arg name="use_sim_time" value="true"/>
         <arg name="gui" value="true"/>

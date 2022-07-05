@@ -34,11 +34,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                min_angle:=-2.35619 max_angle:=2.35619 min_range:=0.1 max_range:=30.0 robot_namespace:=/" >
     <link name="${frame}">
       <inertial>
-        <mass value="1.1" />
+        <mass value="0.017" />
         <origin xyz="0 0 0" />
-        <inertia ixx="${0.0833333 * 1.1 * (0.102*0.102 + 0.152*0.152)}" ixy="0.0" ixz="0.0"
-          iyy="${0.0833333 * 1.1 * (0.105*0.105 + 0.152*0.152)}" iyz="0.0"
-          izz="${0.0833333 * 1.1 * (0.105*0.105 + 0.102*0.102)}" />
+        <inertia ixx="0.0017" ixy="0.0" ixz="0.0"
+          iyy="0.0017" iyz="0.0"
+          izz="0.0017" />
       </inertial>
       <visual>
         <origin xyz="0 0 0" rpy="0 0 0" />

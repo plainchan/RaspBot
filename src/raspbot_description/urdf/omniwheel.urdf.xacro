@@ -1,28 +1,85 @@
-<?xml version="1.0"?>
+<robot name="raspbot_omniwheel" xmlns:xacro="http://ros.org/wiki/xacro"  >
 
-<robot xmlns:xacro="http://ros.org/wiki/xacro" name="raspbot_omniwheel" >
+    <xacro:macro name="raspbot_omniwheel">
 
-    <xacro:macro name="raspbot_omniwheel" params="wheel_prefix *joint_pose">
-        <link name="${wheel_prefix}_omniwheel_link">
-        	<inertial>
-				<mass value="0.167" />
-				<origin xyz="0 0 0" />
-				<inertia  ixx="0.02467" ixy="0" ixz="0" iyy="0.04411" iyz="0" izz="0.02467" />
-			</inertial>
+        <!-- omniwheel part-->
+        <link name="omniwheel_part1_link">
+            <inertial>
+                <mass value="0.01" />
+                <origin xyz="0 0 0" />
+                <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+            </inertial>
             <visual>
                 <origin xyz="0 0 0" rpy="0 0 0" />
                 <geometry>
-                    <mesh filename="package://raspbot_description/meshes/omniwheel.dae" />
+                    <mesh filename="package://raspbot_description/meshes/omniwheel_part1.dae" />
                 </geometry>
             </visual>
+            <collision>
+                <origin xyz="0 0 0" rpy="0 0 0" />
+                <geometry>
+                    <box size="0.039 0.033 0.002"/>
+                </geometry>
+            </collision>
         </link>
+        <joint name="base_omniwheel_part1_joint" type="fixed">
+            <origin xyz="${omniwheel_x_offset} 0 ${omniwheel_vertical_offset}" rpy="0 0 0" />
+            <parent link="base_link" />
+            <child link="omniwheel_part1_link" />
+        </joint>
 
-        <joint name="${wheel_prefix}_wheel" type="continuous">
-            <parent link="base_link"/>
-            <child link="${wheel_prefix}_omniwheel_link"/>
-            <xacro:insert_block name="joint_pose"/>
+        <link name="omniwheel_part2_link">
+            <inertial>
+                <mass value="0.04" />
+                <origin xyz="0 0 0" />
+                <inertia ixx="0.004" ixy="0" ixz="0" iyy="0.004" iyz="0" izz="0.004" />
+            </inertial>
+            <visual>
+                <origin xyz="0 0 0" rpy="0 0 0" />
+                <geometry>
+                    <mesh filename="package://raspbot_description/meshes/omniwheel_part2.dae" />
+                </geometry>
+            </visual>
+            <collision>
+                <origin xyz="0 0 0" rpy="0 0 0" />
+                <geometry>
+                    <cylinder length="0.01" radius="0.02" />
+                </geometry>
+            </collision>
+        </link>
+        <joint name="omniwheel_part1_2_joint" type="continuous">
+            <origin xyz="0 0 -0.01638" rpy="0 0 0" />
+            <parent link="omniwheel_part1_link" />
+            <child link="omniwheel_part2_link" />
+            <axis xyz="0 0 1" rpy="0 0 0" />
+        </joint>
+
+        <link name="omniwheel_part3_link">
+            <inertial>
+                <mass value="0.006" />
+                <origin xyz="0 0 0" />
+                <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+            </inertial>
+            <visual>
+                <origin xyz="0 0 0" rpy="0 0 0" />
+                <geometry>
+                    <mesh filename="package://raspbot_description/meshes/omniwheel_part3.dae" />
+                </geometry>
+            </visual>
+            <collision>
+                <origin xyz="-0.015 0 0" rpy="0 0 0" />
+                <geometry>
+                    <cylinder length="0.025" radius="0.028" />
+                </geometry>
+            </collision>
+        </link>
+        <joint name="omniwheel_part2_3_joint" type="continuous">
+            <origin xyz="-0.015 0 -0.00718" rpy="0 0 0" />
+            <parent link="omniwheel_part2_link" />
+            <child link="omniwheel_part3_link" />
             <axis xyz="0 1 0" rpy="0 0 0" />
         </joint>
     </xacro:macro>
+    
 </robot>
 
