@@ -2,7 +2,7 @@
 
 <launch>
 
-    <include file="$(find raspbot_gazebo)/launch/spawn_raspbot.launch">
+    <include file="$(find raspbot_gazebo)/launch/spawn_raspbot.launch"/>
     
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
         <arg name="world_name" value="$(find raspbot_gazebo)/worlds/empty.world"/> 
@@ -39,9 +39,8 @@ headless (deprecated) recording (previously called headless): Enable gazebo stat
 
 debug: Start gzserver (Gazebo Server) in debug mode using gdb (default false)
 
-verbose: Run gzserver and gzclient with --verbose, printing errors and warnings to the terminal (default false)
+verbose: Run gzserver and gzclient with verbose, printing errors and warnings to the terminal (default false)
 
 server_required: Terminate launch script when gzserver (Gazebo Server) exits (default false)
 
-gui_required: Terminate launch script when gzclient (user interface window) exits (default false) 
--->
+gui_required: Terminate launch script when gzclient (user interface window) exits (default false)  -->

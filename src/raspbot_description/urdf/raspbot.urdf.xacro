@@ -5,9 +5,15 @@
     <xacro:property name="M_PI" value="3.1415916"/>
 
     <xacro:include filename="$(find raspbot_description)/urdf/wheel.urdf.xacro" />
-    <xacro:include filename="$(find raspbot_description)/urdf/omniwheel.urdf.xacro" />
     <xacro:include filename="$(find raspbot_description)/urdf/rplidar.urdf.xacro" />
 
+    <!-- The whole model can't simulate the omni model precisely -->
+    <!-- <xacro:include filename="$(find raspbot_description)/urdf/omniwheel.urdf.xacro" /> -->
+   
+    <!-- Base Size -->
+    <xacro:property name="base_x_size" value="0.2" />
+    <xacro:property name="base_y_size" value="0.16" />
+    <xacro:property name="base_z_size" value="0.07" />
 
     <xacro:property name="base_footprint_offset" value="-0.049" />
 
@@ -18,36 +24,49 @@
     <!-- Wheel Mounting Positions -->
     <xacro:property name="wheeltrack" value="0.203" />
     <xacro:property name="wheel_vertical_offset" value="-0.0145" />
-    <xacro:property name="wheel_horizontal_offset" value="0.0769" />
+    <xacro:property name="wheel_horizontal_offset" value="0.068" />
 
     <!-- omniWheel Mounting Positions -->
-    <xacro:property name="omniwheel_x_offset" value="-0.0455" />
+    <xacro:property name="omniwheel_x_offset" value="-0.053" />
     <xacro:property name="omniwheel_vertical_offset" value="-0.01" />
     
     <!-- lidar Mounting Positions -->
-    <xacro:property name="lidar_x_offset" value="0.0705" />
-    <xacro:property name="lidar_vertical_offset" value="0.0807" />
+    <xacro:property name="lidar_x_offset" value="0.06155" />
+     <xacro:property name="lidar_vertical_offset" value="0.081" /> 
 
     <link name="base_link">
         <visual>
             <origin xyz="0 0 0" rpy="0 0 0" />
             <geometry>
-                <mesh filename="package://raspbot_description/meshes/base.dae" />
+                <mesh filename="package://raspbot_description/meshes/base1.dae" />
             </geometry>
         </visual>
         <collision>
-            <origin xyz="${( husky_front_bumper_extend - husky_rear_bumper_extend ) / 2.0} 0 ${base_z_size/4}" rpy="0 0 0" />
+            <origin xyz="0 0 0" rpy="0 0 0" />
             <geometry>
-                <box size="${ base_x_size + husky_front_bumper_extend + husky_rear_bumper_extend } ${base_y_size} ${base_z_size/2}"/>
+                <box size="0.01 0.01 0.01"/>
             </geometry>
         </collision>
-        <collision>
-            <origin xyz="0 0 ${base_z_size*3/4-0.01}" rpy="0 0 0" />
+        <!-- <collision>
+            <origin xyz="${base_x_size/2+0.00707} 0 0" rpy="0 0 0" />
             <geometry>
-                <box size="${base_x_size*4/5} ${base_y_size} ${base_z_size/2-0.02}"/>
+                <box size="0.0141 ${base_y_size} ${base_z_size}"/>
             </geometry>
-        </collision>
+        </collision> -->
     </link>
+
+    <link name="inertial_link">
+        <inertial>
+            <mass value="1.5" />
+            <origin xyz="0 0 0" />
+            <inertia ixx="0.06022" ixy="-0.002364" ixz="-0.01197" iyy="0.017386" iyz="-0.001544" izz="0.00296" />
+        </inertial>
+    </link>
+    <joint name="inertial_joint" type="fixed">
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <parent link="base_link" />
+        <child link="inertial_link" />
+    </joint>
 
     <link name="base_footprint"/>
     <joint name="base_footprint_joint" type="fixed">
@@ -57,32 +76,112 @@
     </joint>
     
     <!--  wheel  -->
-    <xacro:raspbot_wheel wheel_prefix="left">
+    <!-- <xacro:raspbot_wheel wheel_prefix="left">
         <origin xyz="${wheel_horizontal_offset} ${wheeltrack/2} ${wheel_vertical_offset}" rpy="0 0 0" />
     </xacro:raspbot_wheel>
     <xacro:raspbot_wheel wheel_prefix="right">
         <origin xyz="${wheel_horizontal_offset} ${-wheeltrack/2} ${wheel_vertical_offset}" rpy="${M_PI} 0 0" />
-    </xacro:raspbot_wheel>
+    </xacro:raspbot_wheel> -->
+
+
+    <!-- omniwheel part-->
+    <!-- <link name="omniwheel_part1_link">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://raspbot_description/meshes/omniwheel_part1.dae" />
+            </geometry>
+        </visual>
+    </link>
+    <joint name="base_omniwheel_part1_joint" type="fixed">
+        <origin xyz="${omniwheel_x_offset} 0 ${omniwheel_vertical_offset}" rpy="0 0 0" />
+        <parent link="base_link" />
+        <child link="omniwheel_part1_link" />
+    </joint> -->
+
+    <!-- <link name="omniwheel_part2_link">
+        <inertial>
+            <mass value="0.02" />
+            <origin xyz="0 0 0" />
+            <inertia ixx="0.001" ixy="0.001" ixz="0.001" iyy="0.001" iyz="0.001" izz="0.001" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://raspbot_description/meshes/omniwheel_part2.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <cylinder length="0.032" radius="0.028" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="omniwheel_part1_2_joint" type="continuous">
+        <origin xyz="0 0 -0.01638" rpy="0 0 0" />
+        <parent link="omniwheel_part1_link" />
+        <child link="omniwheel_part2_link" />
+        <axis xyz="0 0 1" rpy="0 0 0" />
+    </joint>
+
+    <link name="omniwheel_part3_link">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://raspbot_description/meshes/omniwheel_part3.dae" />
+            </geometry>
+        </visual>
+    </link>
+    <joint name="omniwheel_part2_3_joint" type="continuous">
+        <origin xyz="-0.015 0 -0.00718" rpy="0 0 0" />
+        <parent link="omniwheel_part2_link" />
+        <child link="omniwheel_part3_link" />
+        <axis xyz="0 1 0" rpy="0 0 0" />
+    </joint> -->
 
     <!-- omniwheel -->
-    <xacro:raspbot_omniwheel wheel_prefix="rear">
+    <!-- <xacro:raspbot_omniwheel wheel_prefix="rear">
         <origin xyz="${omniwheel_x_offset} 0 ${omniwheel_vertical_offset}" rpy="0 0 ${M_PI}" />
-    </xacro:raspbot_omniwheel>
+    </xacro:raspbot_omniwheel> -->
 
-    <xacro:rplidar frame="lidar_link" topic="scan" robot_namespace="$(arg robot_namespace)"/>
+    <!-- <xacro:rplidar frame="lidar_link" topic="scan" robot_namespace="$(arg robot_namespace)"/>
     <joint name="base_lidar_joint" type="fixed">
         <origin xyz="${lidar_x_offset} 0 ${lidar_vertical_offset}" rpy="0 0 0" />
         <parent link="base_link" />
         <child link="lidar_link" />
-    </joint> 
+    </joint>  -->
 
 
     <!-- <link name="imu_link"/>
-    <joint name="base_footprint_joint" type="fixed">
+    <joint name="base_imu_joint" type="fixed">
         <origin xyz="0 0 0" rpy="0 0 0" />
         <parent link="base_link" />
         <child link="imu_link" />
     </joint> -->
+
+
+
+    <link name="test_link">
+        <visual>
+            <origin xyz="0 0 0.08" rpy="${M_PI/2} 0 0" />
+            <geometry>
+                <cylinder length="${wheel_length}" radius="${wheel_radius}" />
+            </geometry>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <cylinder length="${wheel_length}" radius="${wheel_radius}" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="base_test_joint" type="fixed">
+        <origin xyz="0 0 0.08" rpy="0 0 0" />
+        <parent link="base_link" />
+        <child link="test_link" />
+    </joint>
+
 
     <!--  gazebo  -->
     <gazebo>
@@ -106,7 +205,7 @@
             <headingGaussianNoise>0.005</headingGaussianNoise>
         </plugin>
     </gazebo> -->
-
+    
   <!-- <gazebo>
     <plugin name="gps_controller" filename="libhector_gazebo_ros_gps.so">
       <robotNamespace>$(arg robot_namespace)</robotNamespace>
