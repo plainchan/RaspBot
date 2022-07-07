@@ -5,16 +5,17 @@
     <xacro:arg name="use_part_omni_model" default="true" />
     
     <xacro:property name="M_PI" value="3.1415916"/>
+
     <!-- Base Size -->
     <xacro:property name="base_x_size" value="0.2" />
     <xacro:property name="base_y_size" value="0.16" />
     <xacro:property name="base_z_size" value="0.07" />
     
-    <xacro:property name="base_footprint_offset" value="-0.049" />
+    <xacro:property name="base_footprint_offset" value="0.049" />
 
     <!-- Wheel Properties -->
     <xacro:property name="wheel_length" value="0.027" />
-    <xacro:property name="wheel_radius" value="0.0335" />
+    <xacro:property name="wheel_radius" value="0.0325" />
 
     <!-- Wheel Mounting Positions -->
     <xacro:property name="wheeltrack" value="0.203" />
@@ -33,7 +34,16 @@
     <xacro:include filename="$(find raspbot_description)/urdf/rplidar.urdf.xacro" />
     <xacro:include filename="$(find raspbot_description)/urdf/omniwheel.urdf.xacro" />
 
+    <link name="base_footprint"/>
+
     <link name="base_link">
+        <inertial>
+            <mass value="2" />
+            <origin xyz="0 0 0" />
+            <inertia ixx="0.2" ixy="0" ixz="0" 
+                iyy="0.2" iyz="0" 
+                izz="0.2" />
+        </inertial>
         <visual>
             <origin xyz="0 0 0" rpy="0 0 0" />
             <geometry>
@@ -43,51 +53,54 @@
         <collision>
             <origin xyz="0 0 0" rpy="0 0 0" />
             <geometry>
-                <box size="${base_x_size} ${base_y_size} ${base_z_size}"/>
+                <box size="0.2 0.16 0.007"/>
+                <!-- <box size="${base_x_size} ${base_y_size} ${base_z_size}"/> -->
             </geometry>
         </collision>
         <collision>
-            <origin xyz="${base_x_size/2+0.00707} 0 0" rpy="0 0 0" />
+            <origin xyz="0.10857 0 0" rpy="0 0 0" />
+            <!-- <origin xyz="${base_x_size/2+0.00707} 0 0" rpy="0 0 0" /> -->
             <geometry>
-                <box size="0.0141 ${base_y_size} ${base_z_size}"/>
+                <!-- <box size="0.0141 ${base_y_size} ${base_z_size}"/> -->
+                <box size="0.0141 0.16 0.007"/>
             </geometry>
         </collision>
     </link>
 
-    <link name="inertial_link">
-        <inertial>
-            <mass value="1.5" />
-            <origin xyz="0 0 0" />
-            <inertia ixx="0.15" ixy="0" ixz="0" iyy="0.15" iyz="0" izz="0.15" />
-        </inertial>
-    </link>
-    <joint name="inertial_joint" type="fixed">
-        <origin xyz="0 0 0" rpy="0 0 0" />
-        <parent link="base_link" />
-        <child link="inertial_link" />
-    </joint>
-
-    <link name="base_footprint"/>
     <joint name="base_footprint_joint" type="fixed">
         <origin xyz="0 0 ${base_footprint_offset}" rpy="0 0 0" />
-        <parent link="base_link" />
-        <child link="base_footprint" />
+        <parent link="base_footprint" />
+        <child link="base_link" />
     </joint>
     
     <!--  wheel  -->
     <xacro:raspbot_wheel wheel_prefix="left">
         <origin xyz="${wheel_horizontal_offset} ${wheeltrack/2} ${wheel_vertical_offset}" rpy="0 0 0" />
+        <axis xyz="0 1 0" rpy="0 0 0" />
     </xacro:raspbot_wheel>
     <xacro:raspbot_wheel wheel_prefix="right">
         <origin xyz="${wheel_horizontal_offset} ${-wheeltrack/2} ${wheel_vertical_offset}" rpy="${M_PI} 0 0" />
+        <axis xyz="0 -1 0" rpy="0 0 0" />
     </xacro:raspbot_wheel>
 
     <!-- omniwheel -->
     <xacro:raspbot_omniwheel />
 
     <xacro:rplidar frame="lidar_link" topic="scan" robot_namespace="$(arg robot_namespace)"/>
+    <!-- <xacro:rplidar>
+        frame="lidar_link" 
+        topic="scan"
+        min_angle="-2.35619"
+        max_angle="-2.35619"
+        min_range="-2.35619"
+        max_range="-2.35619"
+        sample_size="-2.35619"
+        update_rate="10.0"
+        robot_namespace="$(arg robot_namespace)"
+    </xacro:rplidar> -->
     <joint name="base_lidar_joint" type="fixed">
-        <origin xyz="${lidar_x_offset} 0 ${lidar_vertical_offset}" rpy="0 0 0" />
+        <!-- <origin xyz="${lidar_x_offset} 0 ${lidar_vertical_offset}" rpy="0 0 0" /> -->
+        <origin xyz="0.06155 0.0 0.081" rpy="0 0 0" />
         <parent link="base_link" />
         <child link="lidar_link" />
     </joint> 
@@ -102,19 +115,6 @@
 
     <!--  gazebo  -->
 
-    <!-- for all link -->
-    <gazebo>
-        <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
-            <robotNamespace>$(arg robot_namespace)</robotNamespace>
-            <legacyModeNS>true</legacyModeNS>
-        </plugin>
-    </gazebo>
-    <gazebo>
-        <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
-            <robotNamespace>$(arg robot_namespace)</robotNamespace>
-            <legacyModeNS>true</legacyModeNS>
-        </plugin>
-    </gazebo>
     <gazebo>
         <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
             <robotNamespace>$(arg robot_namespace)</robotNamespace>
@@ -122,8 +122,29 @@
         </plugin>
     </gazebo>
     
+    <!-- <gazebo reference="imu_link">
+        <gravity>true</gravity>
+        <sensor name="imu_sensor" type="imu">
+            <always_on>true</always_on>
+            <update_rate>100</update_rate>
+            <visualize>true</visualize>
+            <topic>__default_topic__</topic>
+            <plugin filename="libgazebo_ros_imu_sensor.so" name="imu_plugin">
+                <topicName>imu</topicName>
+                <bodyName>imu_link</bodyName>
+                <updateRateHZ>10.0</updateRateHZ>
+                <gaussianNoise>0.005</gaussianNoise>
+                <xyzOffset>0 0 0</xyzOffset>
+                <rpyOffset>0 0 0</rpyOffset>
+                <frameName>imu_link</frameName>
+                <initialOrientationAsReference>false</initialOrientationAsReference>
+            </plugin>
+            <pose>0 0 0 0 0 0</pose>
+        </sensor>
+    </gazebo>   -->
+
     <!-- <gazebo>
-        <plugin name="imu_controller" filename="libhector_gazebo_ros_imu.so">
+        <plugin name="imu_link" filename="libhector_gazebo_ros_imu.so">
             <robotNamespace>$(arg robot_namespace)</robotNamespace>
             <updateRate>50.0</updateRate>
             <bodyName>base_link</bodyName>
@@ -136,21 +157,47 @@
             <headingGaussianNoise>0.005</headingGaussianNoise>
         </plugin>
     </gazebo> -->
-    
-  <!-- <gazebo>
-    <plugin name="gps_controller" filename="libhector_gazebo_ros_gps.so">
-      <robotNamespace>$(arg robot_namespace)</robotNamespace>
-      <updateRate>40</updateRate>
-      <bodyName>base_link</bodyName>
-      <frameId>base_link</frameId>
-      <topicName>navsat/fix</topicName>
-      <velocityTopicName>navsat/vel</velocityTopicName>
-      <referenceLatitude>49.9</referenceLatitude>
-      <referenceLongitude>8.9</referenceLongitude>
-      <referenceHeading>0</referenceHeading>
-      <referenceAltitude>0</referenceAltitude>
-      <drift>0.0001 0.0001 0.0001</drift>
-    </plugin>
-  </gazebo> -->
+
+    <!-- <gazebo>
+        <plugin name="gps_controller" filename="libhector_gazebo_ros_gps.so">
+            <robotNamespace>$(arg robot_namespace)</robotNamespace>
+            <updateRate>40</updateRate>
+            <bodyName>base_link</bodyName>
+            <frameId>base_link</frameId>
+            <topicName>navsat/fix</topicName>
+            <velocityTopicName>navsat/vel</velocityTopicName>
+            <referenceLatitude>49.9</referenceLatitude>
+            <referenceLongitude>8.9</referenceLongitude>
+            <referenceHeading>0</referenceHeading>
+            <referenceAltitude>0</referenceAltitude>
+            <drift>0.0001 0.0001 0.0001</drift>
+        </plugin>
+    </gazebo> -->
+
+
+    <!-- <gazebo>
+        <plugin name="differential_drive_controller" filename="libgazebo_ros_diff_drive.so">
+            <updateRate>50</updateRate>
+            <leftJoint>left_wheel</leftJoint>
+            <rightJoint>right_wheel</rightJoint>
+            <wheelSeparation>0.203</wheelSeparation>
+            <wheelDiameter>0.0325</wheelDiameter>
+            <wheelAcceleration>1.0</wheelAcceleration>
+            <wheelTorque>100</wheelTorque>
+            <commandTopic>cmd_vel</commandTopic>
+            <odometryTopic>odom</odometryTopic>
+            <odometryFrame>odom</odometryFrame>
+            <robotBaseFrame>base_link</robotBaseFrame>
+            <odometrySource>world</odometrySource>
+            <publishWheelTF>false</publishWheelTF>
+            <publishOdomTF>true</publishOdomTF>
+            <publishTf>true</publishTf>
+            <publishWheelJointState>false</publishWheelJointState>
+            <legacyMode>false</legacyMode>
+            <rosDebugLevel>na</rosDebugLevel>
+
+        </plugin>
+    </gazebo> -->
+
 
 </robot>

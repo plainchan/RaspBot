@@ -2,9 +2,15 @@
 
 <launch>
 
+    <include file="$(find raspbot_description)/launch/raspbot_description.launch" />
+
     <include file="$(find raspbot_gazebo)/launch/spawn_raspbot.launch"/>
+
+    <!-- <include file="$(find raspbot_gazebo)/launch/gazebo_ros_control.launch"/> -->
     
     <arg name="world" default="$(find raspbot_gazebo)/worlds/track.world"/> 
+
+    
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
         <arg name="world_name" value="$(arg world)"/> 
         <arg name="paused" value="false"/>

@@ -7,7 +7,7 @@
             <inertial>
                 <mass value="0.01" />
                 <origin xyz="0 0 0" />
-                <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+                <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
             </inertial>
             <visual>
                 <origin xyz="0 0 0" rpy="0 0 0" />
@@ -30,9 +30,11 @@
 
         <link name="omniwheel_part2_link">
             <inertial>
-                <mass value="0.04" />
+                <mass value="1" />
                 <origin xyz="0 0 0" />
-                <inertia ixx="0.004" ixy="0" ixz="0" iyy="0.004" iyz="0" izz="0.004" />
+                <inertia ixx="1" ixy="0" ixz="0" 
+                    iyy="1" iyz="0" 
+                    izz="1" />
             </inertial>
             <visual>
                 <origin xyz="0 0 0" rpy="0 0 0" />
@@ -56,9 +58,11 @@
 
         <link name="omniwheel_part3_link">
             <inertial>
-                <mass value="0.006" />
+                <mass value="0.01" />
                 <origin xyz="0 0 0" />
-                <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+                <inertia ixx="0.001" ixy="0" ixz="0" 
+                iyy="0.001" iyz="0" 
+                izz="0.001" />
             </inertial>
             <visual>
                 <origin xyz="0 0 0" rpy="0 0 0" />
@@ -79,7 +83,24 @@
             <child link="omniwheel_part3_link" />
             <axis xyz="0 1 0" rpy="0 0 0" />
         </joint>
+
+        <gazebo reference="omniwheel_part2_link">
+			<mu1 value="0.01"/>
+			<mu2 value="0.01"/>
+			<kp value="10000000.0" />
+			<kd value="1.0" />
+			<fdir1 value="1 0 0"/>
+		</gazebo>     
+
+        <gazebo reference="omniwheel_part3_link">
+			<mu1 value="0.1"/>
+			<mu2 value="0.1"/>
+			<kp value="10000000.0" />
+			<kd value="1.0" />
+			<fdir1 value="1 0 0"/>
+		</gazebo>
+
     </xacro:macro>
-    
+
 </robot>
 

@@ -1,0 +1,59 @@
+raspbot_joint_publisher:
+  type: "joint_state_controller/JointStateController"
+  publish_rate: 50
+
+raspbot_velocity_controller:
+  type        : "diff_drive_controller/DiffDriveController"
+  left_wheel: 'left_wheel'
+  right_wheel: 'right_wheel'
+  publish_rate: 50.0               # default: 50
+  pose_covariance_diagonal : [0.001, 0.001, 0.001, 0.001, 0.001, 0.03]
+  twist_covariance_diagonal: [0.001, 0.001, 0.001, 0.001, 0.001, 0.03]
+
+  # Wheel separation and diameter. These are both optional.
+  # diff_drive_controller will attempt to read either one or both from the
+  # URDF if not specified as a parameter
+  wheel_separation : 0.203
+  wheel_radius : 0.0325
+
+  # Wheel separation and radius multipliers
+  wheel_separation_multiplier: 1.0 # default: 1.0
+  wheel_radius_multiplier    : 1.0 # default: 1.0
+
+  # Velocity commands timeout [s], default 0.5
+  cmd_vel_timeout: 0.25
+
+  # Base frame_id  default: base_link
+  base_frame_id: base_link  
+
+  # Publish to TF directly or not
+  enable_odom_tf: true
+  odom_frame_id : "/odom"
+  
+  # Whether allow more than one publisher on the input topic
+  allow_multiple_cmd_vel_publishers: true
+  # The number of velocity samples to average together to compute the odometry twist
+  velocity_rolling_window_size: 2
+
+  publish_cmd: false
+
+  # Velocity and acceleration limits
+  # Whenever a min_* is unspecified, default to -max_*
+  linear:
+    x:
+      has_velocity_limits    : true
+      max_velocity           : 3  # m/s
+      min_velocity           : -0.5 # m/s
+      has_acceleration_limits: true
+      max_acceleration       : 1.0  # m/s^2
+      min_acceleration       : -0.4 # m/s^2
+      has_jerk_limits        : true
+      max_jerk               : 5.0  # m/s^3
+  angular:
+    z:
+      has_velocity_limits    : true
+      max_velocity           : 1.7  # rad/s
+      has_acceleration_limits: true
+      max_acceleration       : 1.5  # rad/s^2
+      has_jerk_limits        : true
+      max_jerk               : 2.5  # rad/s^3

@@ -2,12 +2,14 @@
 
 <robot xmlns:xacro="http://ros.org/wiki/xacro" name="raspbot_wheel" >
 
-    <xacro:macro name="raspbot_wheel" params="wheel_prefix *joint_pose">
+    <xacro:macro name="raspbot_wheel" params="wheel_prefix *joint_pose  *axis">
         <link name="${wheel_prefix}_wheel_link">
         	<inertial>
 				<mass value="0.034" />
 				<origin xyz="0 0 0" />
-				<inertia  ixx="0.0005" ixy="0" ixz="0" iyy="0.0005" iyz="0" izz="0.0005" />.01
+				<inertia  ixx="0.034" ixy="0" ixz="0" 
+					iyy="0.034" iyz="0" 
+					izz="0.034" />
 			</inertial>
             <visual>
                 <origin xyz="0 0 0" rpy="0 0 0" />
@@ -27,7 +29,7 @@
             <parent link="base_link"/>
             <child link="${wheel_prefix}_wheel_link"/>
             <xacro:insert_block name="joint_pose"/>
-            <axis xyz="0 1 0" rpy="0 0 0" />
+            <xacro:insert_block name="axis"/>
         </joint>
 
 		<gazebo reference="${wheel_prefix}_wheel_link">
@@ -40,12 +42,14 @@
 
 		<transmission name="${wheel_prefix}_wheel_trans" type="SimpleTransmission">
 			<type>transmission_interface/SimpleTransmission</type>
-			<actuator name="${wheel_prefix}_wheel_motor">
-				<mechanicalReduction>1</mechanicalReduction>
-			</actuator>
 			<joint name="${wheel_prefix}_wheel">
 				<hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
 			</joint>
+			<actuator name="${wheel_prefix}_wheel_motor">
+				<hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+				<mechanicalReduction>1</mechanicalReduction>
+			</actuator>
+
 		</transmission>
 
     </xacro:macro>
