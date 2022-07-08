@@ -28,6 +28,7 @@
 #include "ros/ros.h"
 #include "serial/serial.h"
 #include "nav_msgs/Odometry.h"
+#include "nav_msgs/Path.h"
 #include "sensor_msgs/Imu.h"
 #include "raspbot_bringup/raspbot_comm.hpp"
 #include "tf2_ros/transform_broadcaster.h"
@@ -120,14 +121,14 @@ public:
      * 
      * @param imu 
      */
-    void publishIMU(sensor_msgs::Imu &imu);
+    void publishIMU();
 
     /**
      * @brief 计算里程计
      * 
      * @param odom 
      */
-    void publishTransformAndOdom(nav_msgs::Odometry &odom);
+    void publishTransformAndOdom();
 
 
     bool sendFrame_Speed_dpkg(double speed=0.0,double yaw=0.0);
@@ -149,12 +150,27 @@ private:
     double            frequency_;
 
     /**
+     * @brief 
+     */
+    double origin_x;
+    double origin_y;
+    double origin_theta;
+
+    /**
      * @brief 里程计发布管理
      */
     ros::Publisher      odom_pub_;
     nav_msgs::Odometry  wheel_odom_;
     std::string         odom_topic_;
     bool                publish_odom_;
+
+    /**
+     * @brief 轨迹路径发布管理
+     */
+    ros::Publisher      path_pub_;
+    nav_msgs::Path      wheel_Path_;
+    std::string         path_topic_;
+    bool                publish_path_;
 
     /**
      * @brief IMU发布管理

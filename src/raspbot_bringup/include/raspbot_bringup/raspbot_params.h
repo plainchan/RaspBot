@@ -3,15 +3,15 @@
 
 
 
-#define reduction_Ratio                  30       //电机减速比
-#define encoder_line                     13       //
+#define reduction_Ratio                  30       // 电机减速比
+#define encoder_line                     13       // 编码器线数
 #define multiplier_factor                4        // A/B相倍频因子
 #define PPR                   (reduction_Ratio*encoder_line)
 
-#define wheelTrack               (float)0.1       //轮距
-#define wheelRadius                    0.02       //轮胎半径
+#define wheelTrack               (float)0.203       //轮距
+#define wheelRadius                    0.03       //轮胎半径
 
-#define intervalTimer             0.01            //单片机定时器中断 s
+#define intervalTimer             0.01            //单片机定时器中断，数据采集间隔
 
 #define deg_to_rad               0.017453292
 

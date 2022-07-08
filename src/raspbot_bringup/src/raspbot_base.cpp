@@ -433,13 +433,15 @@ namespace raspbot
         imu_pub_.publish(imu);
     }
 
-    void BotBase::publishTransformAndOdom(nav_msgs::Odometry &odom)
+    void BotBase::publishTransformAndOdom()
     {
 
         double l_motor_speed = robot_msgs.l_encoder_pulse*wheelRadius/PPR;
         double r_motor_speed = robot_msgs.r_encoder_pulse*wheelRadius/PPR;
+
         double linearSpeed = (l_motor_speed+r_motor_speed)/2;
-        double angularSpeed= asin((r_motor_speed-l_motor_speed)/wheelTrack);
+        double angularSpeed= (r_motor_speed-l_motor_speed)/wheelTrack;
+
         double steeringAngle = intervalTimer*angularSpeed;
         double turnRadius = linearSpeed/angularSpeed;
 
@@ -463,38 +465,38 @@ namespace raspbot
 
 
         /*  publish odom  */
-        odom.header.frame_id=odom_frame_;
-        odom.header.seq=50;
-        odom.header.stamp = ros::Time::now();
+        wheel_odom_.header.frame_id=odom_frame_;
+        wheel_odom_.header.seq=50;
+        wheel_odom_.header.stamp = ros::Time::now();
 
-        odom.child_frame_id=base_frame_;
+        wheel_odom_.child_frame_id=base_frame_;
 
         /**  The pose in this message should be specified 
          *  in the coordinate frame given by header.frame_id. 
          */
-        odom.pose.pose.position.x=0.0;
-        odom.pose.pose.position.y=0.0;
-        odom.pose.pose.position.z=0.0;
-        odom.pose.pose.orientation.w=0.0;
-        odom.pose.pose.orientation.x=0.0;
-        odom.pose.pose.orientation.y=0.0;
-        odom.pose.pose.orientation.z=0.0;    //the position  and orientation of the car in the odom frame
-        odom.pose.covariance={0};    
+        wheel_odom_.pose.pose.position.x=0.0;
+        wheel_odom_.pose.pose.position.y=0.0;
+        wheel_odom_.pose.pose.position.z=0.0;
+        wheel_odom_.pose.pose.orientation.w=0.0;
+        wheel_odom_.pose.pose.orientation.x=0.0;
+        wheel_odom_.pose.pose.orientation.y=0.0;
+        wheel_odom_.pose.pose.orientation.z=0.0;    //the position  and orientation of the car in the odom frame
+        wheel_odom_.pose.covariance={0};    
 
         /**
          * The twist in this message should be specified 
          * in the coordinate frame given by the child_frame_id
          */  
-        odom.twist.twist.linear.x=linearSpeed;
-        odom.twist.twist.linear.y=0;
-        odom.twist.twist.linear.z=0;
-        odom.twist.twist.angular.x=0;
-        odom.twist.twist.angular.y=0;
-        odom.twist.twist.angular.z=0;      //the speed  and orientation of the car in the car frame
+        wheel_odom_.twist.twist.linear.x=linearSpeed;
+        wheel_odom_.twist.twist.linear.y=0;
+        wheel_odom_.twist.twist.linear.z=0;
+        wheel_odom_.twist.twist.angular.x=0;
+        wheel_odom_.twist.twist.angular.y=0;
+        wheel_odom_.twist.twist.angular.z=steeringAngle;      //the speed  and orientation of the car in the car frame
 
-        odom.twist.covariance={0};
+        wheel_odom_.twist.covariance={0};
         
-        odom_pub_.publish(odom);
+        odom_pub_.publish(wheel_odom_);
     }
 
     bool BotBase::sendFrame_Speed_dpkg(double speed,double yaw)
