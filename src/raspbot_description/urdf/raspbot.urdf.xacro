@@ -38,11 +38,11 @@
 
     <link name="base_link">
         <inertial>
-            <mass value="2" />
-            <origin xyz="0 0 0" />
-            <inertia ixx="0.2" ixy="0" ixz="0" 
-                iyy="0.2" iyz="0" 
-                izz="0.2" />
+            <mass value="1.5" />
+            <origin xyz="0.0405 0 -0.0227" />
+            <inertia ixx="6.732188E-03" ixy="-5.9717E-05" ixz="-1.68616E-04" 
+                iyy="1.002365E-02" iyz="1.51049E-04" 
+                izz="4.991390E-03" />
         </inertial>
         <visual>
             <origin xyz="0 0 0" rpy="0 0 0" />
@@ -53,16 +53,13 @@
         <collision>
             <origin xyz="0 0 0" rpy="0 0 0" />
             <geometry>
-                <box size="0.2 0.16 0.007"/>
-                <!-- <box size="${base_x_size} ${base_y_size} ${base_z_size}"/> -->
+                <box size="${base_x_size} ${base_y_size} ${base_z_size}"/>
             </geometry>
         </collision>
         <collision>
-            <origin xyz="0.10857 0 0" rpy="0 0 0" />
-            <!-- <origin xyz="${base_x_size/2+0.00707} 0 0" rpy="0 0 0" /> -->
+            <origin xyz="${base_x_size/2+0.00707} 0 0" rpy="0 0 0" />
             <geometry>
-                <!-- <box size="0.0141 ${base_y_size} ${base_z_size}"/> -->
-                <box size="0.0141 0.16 0.007"/>
+                <box size="0.0141 ${base_y_size} ${base_z_size}"/>
             </geometry>
         </collision>
     </link>
@@ -99,8 +96,7 @@
         robot_namespace="$(arg robot_namespace)"
     </xacro:rplidar> -->
     <joint name="base_lidar_joint" type="fixed">
-        <!-- <origin xyz="${lidar_x_offset} 0 ${lidar_vertical_offset}" rpy="0 0 0" /> -->
-        <origin xyz="0.06155 0.0 0.081" rpy="0 0 0" />
+        <origin xyz="${lidar_x_offset} 0 ${lidar_vertical_offset}" rpy="0 0 0" />
         <parent link="base_link" />
         <child link="lidar_link" />
     </joint> 
