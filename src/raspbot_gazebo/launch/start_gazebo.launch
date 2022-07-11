@@ -6,7 +6,7 @@
 
     <include file="$(find raspbot_gazebo)/launch/spawn_raspbot.launch"/>
 
-    <!-- <include file="$(find raspbot_gazebo)/launch/gazebo_ros_control.launch"/> -->
+    <include file="$(find raspbot_gazebo)/launch/gazebo_ros_control.launch"/>
     
     <arg name="world" default="$(find raspbot_gazebo)/worlds/track.world"/> 
 

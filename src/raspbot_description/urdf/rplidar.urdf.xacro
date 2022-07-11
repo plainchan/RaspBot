@@ -7,10 +7,10 @@
     <link name="${frame}">
       <inertial>
         <mass value="0.17" />
-        <origin xyz="0 0 0" />
-        <inertia ixx="0.17" ixy="0.0" ixz="0.0"
-          iyy="0.17" iyz="0.0"
-          izz="0.17" />
+        <origin xyz="-0.01 0 -0.01" />
+        <inertia ixx="1.38228E-04" ixy="-0.616E-06" ixz="1.219E-06"
+          iyy="1.57876E-04" iyz="-2.1783E-05"
+          izz="6.8763E-05" />
       </inertial>
       <visual>
         <origin xyz="0 0 0" rpy="0 0 0" />

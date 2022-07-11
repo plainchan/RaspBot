@@ -5,11 +5,11 @@
     <xacro:macro name="raspbot_wheel" params="wheel_prefix *joint_pose  *axis">
         <link name="${wheel_prefix}_wheel_link">
         	<inertial>
-				<mass value="0.034" />
+				<mass value="0.04" />
 				<origin xyz="0 0 0" />
-				<inertia  ixx="0.034" ixy="0" ixz="0" 
-					iyy="0.034" iyz="0" 
-					izz="0.034" />
+				<inertia  ixx="0.04" ixy="0" ixz="0" 
+					iyy="0.04" iyz="0" 
+					izz="0.04" />
 			</inertial>
             <visual>
                 <origin xyz="0 0 0" rpy="0 0 0" />
