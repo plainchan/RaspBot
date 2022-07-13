@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<launch>
+    <node name="nmea_navsat_driver" pkg="nmea_navsat_driver" type="nmea_serial_driver" output="screen">
+      <param name="port" value="/dev/ttyUSB0" />
+      <param name="frame_id" value="gps" />
+      <param name="baud" value="115200" />
+      <param name="time_ref_source" value="gps" />
+      <param name="useRMC" value="False" />
+      
+    </node>
+</launch>
+
+<!-- 
+time_ref_source:
+    The value to use as the source in the sensor_msgs/TimeReference. 
+useRMC:
+    Whether to generate position fixes from GGA sentences or RMC sentences. 
+    If True, fixes will be generated from RMC. 
+    If False, fixes will be generated based on the GGA sentences. 
+    Using GGA sentences allows for approximated covariance output 
+    while RMC provides velocity information. 
+ -->
