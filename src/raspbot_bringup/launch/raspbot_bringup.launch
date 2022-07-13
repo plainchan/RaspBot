@@ -7,7 +7,7 @@
 
     <arg name="odom_topic"       default="wheel_odom"/>
     <arg name="imu_topic"        default="imu/data"/>
-    <arg name="publish_odom"     default="true"/>
+    <arg name="publish_odomTF"     default="true"/>
 
     <arg name="udev_port"        default="/dev/raspbot_com_port"/>
     <arg name="baud"             default="115200"/>
@@ -18,7 +18,7 @@
         <arg name="udev_port"        value="$(arg udev_port)"/>
         <arg name="odom_topic"       value="$(arg odom_topic)"/>
         <arg name="imu_topic"        value="$(arg imu_topic)"/>
-        <arg name="publish_odom"     value="$(arg publish_odom)"/>
+        <arg name="publish_odomTF"   value="$(arg publish_odomTF)"/>
         <arg name="baud"             value="$(arg baud)"/>
     </include>
 

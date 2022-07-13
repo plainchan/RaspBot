@@ -5,6 +5,7 @@
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "cmath"
+
 namespace raspbot
 {
 
@@ -17,9 +18,15 @@ namespace raspbot
           udev_port_("/dev/raspbot_com_port"),
           baud_(115200),
           frequency_(50),
-          publish_odom_(true),
+          publish_odomTF_(true),
           imu_topic_("imu/data"),
-          odom_topic_("wheel_odom")
+          odom_topic_("wheel_odom"),
+          raw_wheel_pose_x(0.0),
+          raw_wheel_pose_y(0.0),
+          raw_wheel_pose_theta(0.0),
+          publish_wheel_path_(false),
+          wheel_path_topic_("wheel_path")
+          
     {
         robot_msgs.voltage = 12.6;
         robot_msgs.l_encoder_pulse = 0;
@@ -74,6 +81,8 @@ namespace raspbot
 
         imu_pub_ = nh_.advertise<sensor_msgs::Imu>(imu_topic_, 10);
         odom_pub_ = nh_.advertise<nav_msgs::Odometry>(odom_topic_, 10);
+        
+        wheel_path_pub_ = nh_.advertise<nav_msgs::Path>(wheel_path_topic_,10);
 
         periodicUpdateTimer_ = nh_.createTimer(ros::Duration(1. / frequency_), &BotBase::periodicUpdate, this);
     }
@@ -87,7 +96,11 @@ namespace raspbot
 
         nhPrivate_.param<std::string>("odom_topic", odom_topic_, "odom");
         nhPrivate_.param<std::string>("imu_topic", imu_topic_, "imu/data");
-        nhPrivate_.param<bool>("publish_odom", publish_odom_, true);
+        nhPrivate_.param<bool>("publish_odomTF", publish_odomTF_, true);
+
+        nhPrivate_.param<std::string>("wheel_path_topic", wheel_path_topic_, "wheel_path");
+        nhPrivate_.param<bool>("publish_wheel_path", publish_wheel_path_, false);
+
 
         nhPrivate_.param<std::string>("twist_topic", twist_topic_, "cmd_vel");
         
@@ -199,15 +212,19 @@ namespace raspbot
             {
                 if (parse_stream(stream_msgs, RxBuff[i]) == 1)
                 {   
-                    publishIMU(imu_);
-                    if(publish_odom_)
+                    if(imu_updated)
                     {
-                        // calcuOdomValue(wheel_odom_);
-                        // odom_pub_.publish(wheel_odom_);
+                        publishIMU();
+                        imu_updated = false;
+                    }
+                    if(publish_odomTF_ && encoder_updated)
+                    {
+                        publishTransformAndOdom();
+                        encoder_updated = false;
                     }
 
                     /*  show params */
-#define debug_robot_params
+// #define debug_robot_params
 #ifdef  debug_robot_params
                     static int count=0;
                     if(++count>frequency_)
@@ -306,7 +323,8 @@ namespace raspbot
                 robot_msgs.voltage = ((float)buff[++offset]) / 10.0;
 
                 robot_msgs.l_encoder_pulse = Byte2INT16(&buff[offset+1]);offset+=2;
-                robot_msgs.r_encoder_pulse = Byte2INT16(&buff[offset+1]);offset+=2;
+                robot_msgs.r_encoder_pulse = Byte2INT16(&buff[offset+1]);offset+=2; 
+                encoder_updated = true;
 
                 robot_msgs.acc[0] = Byte2Float(&buff[offset+1]);offset+=4;
                 robot_msgs.acc[1] = Byte2Float(&buff[offset+1]);offset+=4;
@@ -323,6 +341,7 @@ namespace raspbot
                 robot_msgs.elu[0] = Byte2Float(&buff[offset+1]);offset+=4;
                 robot_msgs.elu[1] = Byte2Float(&buff[offset+1]);offset+=4;
                 robot_msgs.elu[2] = Byte2Float(&buff[offset+1]);offset+=4;
+                imu_updated = true;
                 break; /* robot_tag */
             case voltage_tag:
                 robot_msgs.voltage = ((float)buff[++offset])/10.0;
@@ -330,6 +349,7 @@ namespace raspbot
             case encoder_tag:
                 robot_msgs.l_encoder_pulse = Byte2INT16(&buff[offset+1]);offset+=2;
                 robot_msgs.r_encoder_pulse = Byte2INT16(&buff[offset+1]);offset+=2;
+                encoder_updated = true;
                 break; /* encoder_tag */
             case imu_tag:
                 robot_msgs.acc[0] = Byte2Float(&buff[offset+1]);offset+=4;
@@ -347,6 +367,7 @@ namespace raspbot
                 robot_msgs.elu[0] = Byte2Float(&buff[offset+1]);offset+=4;
                 robot_msgs.elu[1] = Byte2Float(&buff[offset+1]);offset+=4;
                 robot_msgs.elu[2] = Byte2Float(&buff[offset+1]);offset+=4;
+                imu_updated = true;
                 break; /* imu_tag */
             case imu_sensor_tag:
                 robot_msgs.acc[0] = Byte2Float(&buff[offset+1]);offset+=4;
@@ -360,7 +381,8 @@ namespace raspbot
                 robot_msgs.mag[0] = Byte2Float(&buff[offset+1]);offset+=4;
                 robot_msgs.mag[1] = Byte2Float(&buff[offset+1]);offset+=4;
                 robot_msgs.mag[2] = Byte2Float(&buff[offset+1]);offset+=4;
-        #endif
+        #endif  
+                imu_updated = true;
                 break; /* imu_sensor_tag */
             case imu_raw_tag:
                 robot_msgs.acc[0] = Byte2INT16(&buff[offset+1])*accRatio;offset+=2;
@@ -378,6 +400,7 @@ namespace raspbot
                 robot_msgs.elu[0] = Byte2INT16(&buff[offset+1])*eluRatio;offset+=2;
                 robot_msgs.elu[1] = Byte2INT16(&buff[offset+1])*eluRatio;offset+=2;
                 robot_msgs.elu[2] = Byte2INT16(&buff[offset+1])*eluRatio;offset+=2;
+                imu_updated = true;
                 break; /* imu_raw_tag */
 
             default:
@@ -397,40 +420,41 @@ namespace raspbot
         }
     }
 
-    void BotBase::publishIMU(sensor_msgs::Imu &imu)
+    void BotBase::publishIMU()
     {
-        imu.header.frame_id = imu_frame_;
-        imu.header.seq = 100;
-        imu.header.stamp = ros::Time::now();
+        imu_.header.frame_id = imu_frame_;
+        imu_.header.seq = 100;
+        imu_.header.stamp = ros::Time::now();
 
-        imu.linear_acceleration.x = robot_msgs.acc[0];
-        imu.linear_acceleration.y = robot_msgs.acc[1];
-        imu.linear_acceleration.z = robot_msgs.acc[2];
+        imu_.linear_acceleration.x = robot_msgs.acc[0];
+        imu_.linear_acceleration.y = robot_msgs.acc[1];
+        imu_.linear_acceleration.z = robot_msgs.acc[2];
 
-        imu.linear_acceleration_covariance = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+        imu_.linear_acceleration_covariance = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-        imu.angular_velocity.x = robot_msgs.gyr[0];
-        imu.angular_velocity.y = robot_msgs.gyr[1];
-        imu.angular_velocity.z = robot_msgs.gyr[2];
+        imu_.angular_velocity.x = robot_msgs.gyr[0];
+        imu_.angular_velocity.y = robot_msgs.gyr[1];
+        imu_.angular_velocity.z = robot_msgs.gyr[2];
 
-        imu.angular_velocity_covariance = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+        imu_.angular_velocity_covariance = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 
         /* 四元数 */
         tf2::Quaternion qtn;
         static double roll_offset = robot_msgs.elu[0];
         static double pitch_offset = robot_msgs.elu[1];
         static double yaw_offset = robot_msgs.elu[2];
+
         qtn.setRPY(robot_msgs.elu[0]-roll_offset,robot_msgs.elu[1]-pitch_offset,robot_msgs.elu[2]-yaw_offset);
    
-        imu.orientation.w = qtn.getW();
-        imu.orientation.x = qtn.getX();
-        imu.orientation.y = qtn.getY();
-        imu.orientation.z = qtn.getZ();
+        imu_.orientation.w = qtn.getW();
+        imu_.orientation.x = qtn.getX();
+        imu_.orientation.y = qtn.getY();
+        imu_.orientation.z = qtn.getZ();
 
-        imu.orientation_covariance = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+        imu_.orientation_covariance = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 
         //publish
-        imu_pub_.publish(imu);
+        imu_pub_.publish(imu_);
     }
 
     void BotBase::publishTransformAndOdom()
@@ -441,9 +465,18 @@ namespace raspbot
 
         double linearSpeed = (l_motor_speed+r_motor_speed)/2;
         double angularSpeed= (r_motor_speed-l_motor_speed)/wheelTrack;
-
-        double steeringAngle = intervalTimer*angularSpeed;
+        
         double turnRadius = linearSpeed/angularSpeed;
+
+
+        // raw_wheel_pose_theta = raw_wheel_pose_theta + angularSpeed*intervalTimer;  //?
+        raw_wheel_pose_x = raw_wheel_pose_x + linearSpeed*intervalTimer*cos(raw_wheel_pose_theta); 
+        raw_wheel_pose_y = raw_wheel_pose_y + linearSpeed*intervalTimer*sin(raw_wheel_pose_theta);
+        raw_wheel_pose_theta = raw_wheel_pose_theta + angularSpeed*intervalTimer; //?
+
+       
+        tf2::Quaternion qtn;
+        qtn.setRPY(0,0,raw_wheel_pose_theta);
 
         /* publish transform  */
         odomtfs_.header.frame_id = odom_frame_;
@@ -452,18 +485,18 @@ namespace raspbot
 
         odomtfs_.child_frame_id = base_frame_;
         
-        odomtfs_.transform.translation.x = 0.0;
-        odomtfs_.transform.translation.y = 0.0;
+        odomtfs_.transform.translation.x = raw_wheel_pose_x;
+        odomtfs_.transform.translation.y = raw_wheel_pose_y;
         odomtfs_.transform.translation.z = 0.0;
 
-        odomtfs_.transform.rotation.w = 0.0;
-        odomtfs_.transform.rotation.x = 0.0;
-        odomtfs_.transform.rotation.y = 0.0;
-        odomtfs_.transform.rotation.z = 0.0;
+        odomtfs_.transform.rotation.w = qtn.getW();
+        odomtfs_.transform.rotation.x = qtn.getX();
+        odomtfs_.transform.rotation.y = qtn.getY();
+        odomtfs_.transform.rotation.z = qtn.getZ();
 
         tfBroadcaster_.sendTransform(odomtfs_);  //publsih
 
-
+  
         /*  publish odom  */
         wheel_odom_.header.frame_id=odom_frame_;
         wheel_odom_.header.seq=50;
@@ -474,13 +507,13 @@ namespace raspbot
         /**  The pose in this message should be specified 
          *  in the coordinate frame given by header.frame_id. 
          */
-        wheel_odom_.pose.pose.position.x=0.0;
-        wheel_odom_.pose.pose.position.y=0.0;
-        wheel_odom_.pose.pose.position.z=0.0;
-        wheel_odom_.pose.pose.orientation.w=0.0;
-        wheel_odom_.pose.pose.orientation.x=0.0;
-        wheel_odom_.pose.pose.orientation.y=0.0;
-        wheel_odom_.pose.pose.orientation.z=0.0;    //the position  and orientation of the car in the odom frame
+        wheel_odom_.pose.pose.position.x = raw_wheel_pose_x;
+        wheel_odom_.pose.pose.position.y = raw_wheel_pose_y;
+        wheel_odom_.pose.pose.position.z = 0.0;
+        wheel_odom_.pose.pose.orientation.w = qtn.getW();
+        wheel_odom_.pose.pose.orientation.x = qtn.getX();
+        wheel_odom_.pose.pose.orientation.y = qtn.getY();
+        wheel_odom_.pose.pose.orientation.z = qtn.getZ();    //the position  and orientation of the car in the odom frame
         wheel_odom_.pose.covariance={0};    
 
         /**
@@ -492,11 +525,43 @@ namespace raspbot
         wheel_odom_.twist.twist.linear.z=0;
         wheel_odom_.twist.twist.angular.x=0;
         wheel_odom_.twist.twist.angular.y=0;
-        wheel_odom_.twist.twist.angular.z=steeringAngle;      //the speed  and orientation of the car in the car frame
+        wheel_odom_.twist.twist.angular.z= angularSpeed;      //the speed  and orientation of the car in the car frame
 
         wheel_odom_.twist.covariance={0};
         
         odom_pub_.publish(wheel_odom_);
+
+
+        /*  publish wheel path  */
+        if(publish_wheel_path_)
+        {
+            static bool initHeader = true;
+            if(initHeader)
+            {
+                wheel_path_.header.frame_id = odom_frame_;
+                wheel_path_.header.seq = 20;
+                wheel_path_.header.stamp = ros::Time::now();
+                initHeader = false;
+            }
+            geometry_msgs::PoseStamped cur_pose;
+            cur_pose.header.frame_id = odom_frame_;
+            cur_pose.header.seq = 0;
+            cur_pose.header.stamp = ros::Time::now();
+
+            cur_pose.pose.position.x = raw_wheel_pose_x;
+            cur_pose.pose.position.y = raw_wheel_pose_y;
+            cur_pose.pose.position.z = 0.0;
+
+            cur_pose.pose.orientation.w = qtn.getW();
+            cur_pose.pose.orientation.x = qtn.getX();
+            cur_pose.pose.orientation.y = qtn.getY();
+            cur_pose.pose.orientation.z = qtn.getZ();
+
+            wheel_path_.poses.emplace_back(cur_pose);
+
+            wheel_path_pub_.publish(wheel_path_);
+        }
+  
     }
 
     bool BotBase::sendFrame_Speed_dpkg(double speed,double yaw)

@@ -150,11 +150,11 @@ private:
     double            frequency_;
 
     /**
-     * @brief 
+     * @brief  
      */
-    double origin_x;
-    double origin_y;
-    double origin_theta;
+    double raw_wheel_pose_x;
+    double raw_wheel_pose_y;
+    double raw_wheel_pose_theta;
 
     /**
      * @brief 里程计发布管理
@@ -162,15 +162,15 @@ private:
     ros::Publisher      odom_pub_;
     nav_msgs::Odometry  wheel_odom_;
     std::string         odom_topic_;
-    bool                publish_odom_;
+    bool                publish_odomTF_;
 
     /**
      * @brief 轨迹路径发布管理
      */
-    ros::Publisher      path_pub_;
-    nav_msgs::Path      wheel_Path_;
-    std::string         path_topic_;
-    bool                publish_path_;
+    ros::Publisher      wheel_path_pub_;
+    nav_msgs::Path      wheel_path_;
+    std::string         wheel_path_topic_;
+    bool                publish_wheel_path_;
 
     /**
      * @brief IMU发布管理
@@ -218,6 +218,13 @@ private:
      * @brief         参数
      */
     Robot_msgs        robot_msgs;
+
+
+    /**
+     * @brief serial data update flag
+     */
+    bool imu_updated;
+    bool encoder_updated;
 
 };
 
