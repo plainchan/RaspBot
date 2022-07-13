@@ -1,9 +1,6 @@
 #include "ros/ros.h"
 #include "raspbot_bringup/raspbot_base.h"
 
-
-
-
 int main(int argc,char **argv)
 {
 

@@ -51,6 +51,9 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   RaspbotStatus.msg 
+)
+add_message_files(
+  FILES
   RaspbotSpeed.msg
 )
 

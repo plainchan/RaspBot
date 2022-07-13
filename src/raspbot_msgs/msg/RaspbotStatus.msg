@@ -1,4 +1,4 @@
 Header header
 float32 voltage
-Int16 encoder_l
-Int16 encoder_r
+int16 encoder_l
+int16 encoder_r
