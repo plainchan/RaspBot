@@ -34,28 +34,9 @@
     <xacro:include filename="$(find raspbot_description)/urdf/rplidar.urdf.xacro" />
     <xacro:include filename="$(find raspbot_description)/urdf/omniwheel.urdf.xacro" />
 
-    <link name="base_footprint"/>
+    
 
     <link name="base_link">
-        <inertial>
-            <!-- <mass value="2.8" /> -->
-            <!-- <mass value="1.5" /> -->
-            <mass value="1.5" />
-            <origin xyz="0.04 0.000 -0.00225" />
-            <!-- <inertia ixx="6.732188E-03" ixy="-5.9717E-05" ixz="-1.68616E-04" 
-                iyy="1.002365E-02" iyz="1.51049E-04" 
-                izz="4.991390E-03" /> -->
-            <!-- <inertia ixx="1.2650E-02" ixy="-1.1198E-04" ixz="-2.94157E-04" 
-                iyy="1.8646767E-02" iyz="2.31768E-04" 
-                izz="9.173871E-03" />     -->
-            <!-- <inertia ixx="2.2592E-02" ixy="-1.9999E-04" ixz="-5.25345E-04" 
-                iyy="3.3301E-02" iyz="4.13922E-04" 
-                izz="1.6383935E-02" />   -->
-            <inertia ixx="1.5" ixy="0" ixz="0" 
-                iyy="1.5" iyz="0" 
-                izz="1.5" />  
-
-        </inertial>
         <visual>
             <origin xyz="0 0 0" rpy="0 0 0" />
             <geometry>
@@ -76,10 +57,39 @@
         </collision>
     </link>
 
+    <link name="inertial_link">
+        <inertial>
+            <!-- <mass value="2.8" /> -->
+            <!-- <mass value="1.5" /> -->
+            <mass value="1.5" />
+            <origin xyz="0.04 0.000 -0.00225" />
+            <!-- <inertia ixx="6.732188E-03" ixy="-5.9717E-05" ixz="-1.68616E-04" 
+                iyy="1.002365E-02" iyz="1.51049E-04" 
+                izz="4.991390E-03" /> -->
+            <!-- <inertia ixx="1.2650E-02" ixy="-1.1198E-04" ixz="-2.94157E-04" 
+                iyy="1.8646767E-02" iyz="2.31768E-04" 
+                izz="9.173871E-03" />     -->
+            <!-- <inertia ixx="2.2592E-02" ixy="-1.9999E-04" ixz="-5.25345E-04" 
+                iyy="3.3301E-02" iyz="4.13922E-04" 
+                izz="1.6383935E-02" />   -->
+            <inertia ixx="1.5" ixy="0" ixz="0" 
+                iyy="1.5" iyz="0" 
+                izz="1.5" />  
+
+        </inertial>
+    </link>
+
+    <joint name="base_inertial_joint" type="fixed">
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <parent link="base_link" />
+        <child link="inertial_link" />
+    </joint>
+
+    <link name="base_footprint"/>
     <joint name="base_footprint_joint" type="fixed">
-        <origin xyz="0 0 ${base_footprint_offset}" rpy="0 0 0" />
-        <parent link="base_footprint" />
-        <child link="base_link" />
+        <origin xyz="0 0 ${-base_footprint_offset}" rpy="0 0 0" />
+        <parent link="base_link" />
+        <child link="base_footprint" />
     </joint>
     
     <!--  wheel  -->
@@ -96,7 +106,7 @@
     <xacro:raspbot_omniwheel />
 
     <!-- <xacro:rplidar frame="lidar_link" topic="scan" robot_namespace="$(arg robot_namespace)"/> -->
-    <!-- <xacro:rplidar
+    <xacro:rplidar
         frame="lidar_link" 
         topic="scan"
         min_angle="${-M_PI}"
@@ -105,13 +115,13 @@
         max_range="12"
         sample_size="360"
         update_rate="5.5"
-        robot_namespace="$(arg robot_namespace)" /> -->
+        robot_namespace="$(arg robot_namespace)" />
 
-    <!-- <joint name="base_lidar_joint" type="fixed">
+    <joint name="base_lidar_joint" type="fixed">
         <origin xyz="${lidar_x_offset} 0 ${lidar_vertical_offset}" rpy="0 0 0" />
         <parent link="base_link" />
         <child link="lidar_link" />
-    </joint>  -->
+    </joint> 
 
 
     <link name="imu_link"/>

@@ -12,6 +12,9 @@
     <arg name="udev_port"        default="/dev/raspbot_com_port"/>
     <arg name="baud"             default="115200"/>
 
+    <!-- robot model -->
+    <include file="$(find raspbot_description)/launch/raspbot_description.launch" />
+
     <include file="$(find raspbot_bringup)/launch/raspbot_minimal.launch" >
         <arg name="base_frame"       value="$(arg base_frame)"/>
         <arg name="odom_frame"       value="$(arg odom_frame)"/>
@@ -23,7 +26,6 @@
     </include>
 
     <!-- <node pkg="raspbot_bringup"  type="raspbot_bringup__test_node" name="test_node" output="screen"/> -->
-
-    <node pkg="tf" type="static_transform_publisher" name="baselink_imu_broadcaster" args="0 0 0 0 0 0 base_link imu_link 100"  />
+    
     <node pkg="rviz" type="rviz" name="rviz" args="-d  $(find raspbot_bringup)/rviz/bringup.rviz" />
 </launch>
