@@ -8,8 +8,8 @@
 #define multiplier_factor                4        // A/B相倍频因子
 #define PPR                   (reduction_Ratio*encoder_line)
 
-#define wheelTrack               (float)0.203       //轮距
-#define wheelRadius                    0.03       //轮胎半径
+#define wheelTrack                0.203f       //轮距
+#define wheelRadius               0.0325f       //轮胎半径
 
 #define intervalTimer             0.01            //单片机定时器中断，数据采集间隔
 

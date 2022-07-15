@@ -32,7 +32,7 @@
 #include "sensor_msgs/Imu.h"
 #include "raspbot_bringup/raspbot_comm.hpp"
 #include "tf2_ros/transform_broadcaster.h"
-
+#include "raspbot_msgs/bot_speed.h"
 
 namespace raspbot
 {
@@ -118,17 +118,20 @@ public:
 
     /**
      * @brief Set the Imu Value object
-     * 
-     * @param imu 
      */
     void publishIMU();
 
     /**
      * @brief 计算里程计
-     * 
-     * @param odom 
+     *
      */
     void publishTransformAndOdom();
+
+    /**
+     * @brief 发布速度
+     * 
+     */
+    void publishSpeed();
 
 
     bool sendFrame_Speed_dpkg(double speed=0.0,double yaw=0.0);
@@ -150,11 +153,15 @@ private:
     double            frequency_;
 
     /**
-     * @brief  
+     * @brief  car params
      */
-    double raw_wheel_pose_x;
-    double raw_wheel_pose_y;
-    double raw_wheel_pose_theta;
+    double raw_wheel_pose_x_;
+    double raw_wheel_pose_y_;
+    double raw_wheel_pose_theta_;
+    double linearSpeed_;
+    double angularSpeed_;
+    double turnRadius_;
+
 
     /**
      * @brief 里程计发布管理
@@ -185,6 +192,14 @@ private:
      */
     ros::Subscriber   twist_sub_;
     std::string       twist_topic_;
+
+    /**
+     * @brief 速度发布管理
+     */
+    ros::Publisher    speed_pub_;
+    std::string       speed_topic_; 
+    raspbot_msgs::bot_speed   speed_;
+    bool              publish_speed_;
 
     /**
      * @brief tf坐标变换及广播发布

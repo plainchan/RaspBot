@@ -11,10 +11,14 @@
     <arg name="udev_port"        default="/dev/raspbot_com_port"/>
     <arg name="baud"             default="115200"/>
 
+    <arg name="twist_topic"      default="cmd_vel"/>
     <arg name="odom_topic"       default="wheel_odom"/>
     <arg name="imu_topic"        default="imu/data"/>
+    <arg name="speed_topic"      default="speed"/>
+
     <arg name="publish_odom"     default="true"/>
     <arg name="publish_odomTF"   default="false"/>
+    <arg name="publish_speed"   default="false"/>
 
     <!-- launch node -->
     <node pkg="raspbot_bringup"  type="raspbot_bringup_node" name="raspbot_bringup" output="screen" respawn="true"  >
@@ -24,10 +28,13 @@
         <param name="frequency"       type="double"        value="$(arg frequency)"/>
         <param name="udev_port"       type="string"        value="$(arg udev_port)"/>
         <param name="baud"            type="int"           value="$(arg baud)"/>
+        <param name="twist_topic "    type="string"        value="$(arg twist_topic)"/>
         <param name="odom_topic"      type="string"        value="$(arg odom_topic)"/>
         <param name="imu_topic "      type="string"        value="$(arg imu_topic)"/>
+        <param name="speed_topic "    type="string"        value="$(arg speed_topic)"/>
         <param name="publish_odom"    type="bool"          value="$(arg publish_odom)"/>
         <param name="publish_odomTF"  type="bool"          value="$(arg publish_odomTF)"/>
+        <param name="publish_speed"   type="bool"          value="$(arg publish_speed)"/>
     </node>
 
 

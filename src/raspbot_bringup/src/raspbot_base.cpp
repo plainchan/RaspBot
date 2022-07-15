@@ -1,10 +1,54 @@
+/*
+ * MIT License
+ *
+ * Copyright (c) 2022 plainchan
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+#include "cmath"
 #include "raspbot_bringup/raspbot_base.h"
 #include "raspbot_bringup/crc16.h"
 #include "raspbot_bringup/crc8.h"
 #include "raspbot_bringup/raspbot_params.h"
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
-#include "cmath"
+#include "raspbot_msgs/bot_speed.h"
+
+/**
+ * rosparams:
+ *  base_frame
+ *  odom_frame
+ *  imu_frame
+ *  odom_topic
+ *  imu_topic
+ *  twist_topic
+ *  wheel_path_topic
+ *  udev_port
+ *  baud
+ *  frequency
+ *  publish_odomTF
+ *  publish_wheel_path
+ */
+
+
+
 
 namespace raspbot
 {
@@ -18,17 +62,25 @@ namespace raspbot
           udev_port_("/dev/raspbot_com_port"),
           baud_(115200),
           frequency_(50),
-          publish_odomTF_(true),
           imu_topic_("imu/data"),
           odom_topic_("wheel_odom"),
-          raw_wheel_pose_x(0.0),
-          raw_wheel_pose_y(0.0),
-          raw_wheel_pose_theta(0.0),
+          twist_topic_("cmd_vel"),
+          speed_topic_("speed"),
+          wheel_path_topic_("wheel_path"),
+          raw_wheel_pose_x_(0.0),
+          raw_wheel_pose_y_(0.0),
+          raw_wheel_pose_theta_(0.0),
+          linearSpeed_(0.0),
+          angularSpeed_(0.0),
+          turnRadius_(0.0),
+          publish_odomTF_(false),
           publish_wheel_path_(false),
-          wheel_path_topic_("wheel_path")
+          publish_speed_(false)
+          
+
           
     {
-        robot_msgs.voltage = 12.6;
+        robot_msgs.voltage = 11.1;
         robot_msgs.l_encoder_pulse = 0;
         robot_msgs.r_encoder_pulse = 0;
         robot_msgs.acc[0] = 0.0;
@@ -79,11 +131,16 @@ namespace raspbot
     {
         setting();
 
+        //sub
+        twist_sub_ = nh_.subscribe<geometry_msgs::Twist>(twist_topic_, 10, &BotBase::speedTwistCallBack, this);
+       
+        //pub
         imu_pub_ = nh_.advertise<sensor_msgs::Imu>(imu_topic_, 10);
         odom_pub_ = nh_.advertise<nav_msgs::Odometry>(odom_topic_, 10);
-        
         wheel_path_pub_ = nh_.advertise<nav_msgs::Path>(wheel_path_topic_,10);
+        speed_pub_ = nh_.advertise<raspbot_msgs::bot_speed>(speed_topic_,10);
 
+        //Timer
         periodicUpdateTimer_ = nh_.createTimer(ros::Duration(1. / frequency_), &BotBase::periodicUpdate, this);
     }
 
@@ -94,15 +151,18 @@ namespace raspbot
         nhPrivate_.param<std::string>("odom_frame", odom_frame_, "odom");
         nhPrivate_.param<std::string>("imu_frame", imu_frame_, "imu_link");
 
-        nhPrivate_.param<std::string>("odom_topic", odom_topic_, "odom");
+        nhPrivate_.param<std::string>("odom_topic", odom_topic_, "wheel/odom");
         nhPrivate_.param<std::string>("imu_topic", imu_topic_, "imu/data");
         nhPrivate_.param<bool>("publish_odomTF", publish_odomTF_, true);
 
-        nhPrivate_.param<std::string>("wheel_path_topic", wheel_path_topic_, "wheel_path");
+        nhPrivate_.param<std::string>("wheel_path_topic", wheel_path_topic_, "wheel/path");
         nhPrivate_.param<bool>("publish_wheel_path", publish_wheel_path_, false);
 
 
         nhPrivate_.param<std::string>("twist_topic", twist_topic_, "cmd_vel");
+
+        nhPrivate_.param<std::string>("speed_topic", speed_topic_, "speed");
+        nhPrivate_.param<bool>("publishSpeed", publish_speed_, false);
         
 
         nhPrivate_.param<std::string>("udev_port", udev_port_, "/dev/raspbot_com_port");
@@ -117,9 +177,9 @@ namespace raspbot
             ROS_WARN_STREAM("reset frequency" <<frequency_ <<"HZ" );
         }
         ROS_INFO_STREAM("Timer:" << 1000.0/frequency_<<" ms");
+
         serial_init();
 
-        twist_sub_ = nh_.subscribe<geometry_msgs::Twist>(twist_topic_, 10, &BotBase::speedTwistCallBack, this);
     }
 
     bool BotBase::serial_init()
@@ -213,15 +273,16 @@ namespace raspbot
                 if (parse_stream(stream_msgs, RxBuff[i]) == 1)
                 {   
                     if(imu_updated)
-                    {
                         publishIMU();
-                        imu_updated = false;
-                    }
-                    if(publish_odomTF_ && encoder_updated)
+                    if(encoder_updated)
                     {
-                        publishTransformAndOdom();
-                        encoder_updated = false;
+                        if(publish_odomTF_) publishTransformAndOdom();
+                        if(publish_speed_)  publishSpeed();
                     }
+
+                    imu_updated = false;
+                    encoder_updated = false;
+                    
 
                     /*  show params */
 // #define debug_robot_params
@@ -460,23 +521,23 @@ namespace raspbot
     void BotBase::publishTransformAndOdom()
     {
 
-        double l_motor_speed = robot_msgs.l_encoder_pulse*wheelRadius/PPR;
-        double r_motor_speed = robot_msgs.r_encoder_pulse*wheelRadius/PPR;
+        double l_motor_speed = 2*M_PI*wheelRadius*robot_msgs.l_encoder_pulse/(PPR*intervalTimer);
+        double r_motor_speed = 2*M_PI*wheelRadius*robot_msgs.r_encoder_pulse/(PPR*intervalTimer);
 
-        double linearSpeed = (l_motor_speed+r_motor_speed)/2;
-        double angularSpeed= (r_motor_speed-l_motor_speed)/wheelTrack;
+        linearSpeed_ = (l_motor_speed+r_motor_speed)/2;
+        angularSpeed_ = (r_motor_speed-l_motor_speed)/wheelTrack;
         
-        double turnRadius = linearSpeed/angularSpeed;
+        turnRadius_ = linearSpeed_/angularSpeed_;
 
 
         // raw_wheel_pose_theta = raw_wheel_pose_theta + angularSpeed*intervalTimer;  //?
-        raw_wheel_pose_x = raw_wheel_pose_x + linearSpeed*intervalTimer*cos(raw_wheel_pose_theta); 
-        raw_wheel_pose_y = raw_wheel_pose_y + linearSpeed*intervalTimer*sin(raw_wheel_pose_theta);
-        raw_wheel_pose_theta = raw_wheel_pose_theta + angularSpeed*intervalTimer; //?
+        raw_wheel_pose_x_ = raw_wheel_pose_x_ + linearSpeed_*intervalTimer*cos(raw_wheel_pose_theta_); 
+        raw_wheel_pose_y_ = raw_wheel_pose_y_ + linearSpeed_*intervalTimer*sin(raw_wheel_pose_theta_);
+        raw_wheel_pose_theta_ = raw_wheel_pose_theta_ + angularSpeed_*intervalTimer; //?
 
        
         tf2::Quaternion qtn;
-        qtn.setRPY(0,0,raw_wheel_pose_theta);
+        qtn.setRPY(0,0,raw_wheel_pose_theta_);
 
         /* publish transform  */
         odomtfs_.header.frame_id = odom_frame_;
@@ -485,8 +546,8 @@ namespace raspbot
 
         odomtfs_.child_frame_id = base_frame_;
         
-        odomtfs_.transform.translation.x = raw_wheel_pose_x;
-        odomtfs_.transform.translation.y = raw_wheel_pose_y;
+        odomtfs_.transform.translation.x = raw_wheel_pose_x_;
+        odomtfs_.transform.translation.y = raw_wheel_pose_y_;
         odomtfs_.transform.translation.z = 0.0;
 
         odomtfs_.transform.rotation.w = qtn.getW();
@@ -498,17 +559,17 @@ namespace raspbot
 
   
         /*  publish odom  */
-        wheel_odom_.header.frame_id=odom_frame_;
-        wheel_odom_.header.seq=50;
+        wheel_odom_.header.frame_id = odom_frame_;
+        wheel_odom_.header.seq = 50;
         wheel_odom_.header.stamp = ros::Time::now();
 
-        wheel_odom_.child_frame_id=base_frame_;
+        wheel_odom_.child_frame_id = base_frame_;
 
         /**  The pose in this message should be specified 
          *  in the coordinate frame given by header.frame_id. 
          */
-        wheel_odom_.pose.pose.position.x = raw_wheel_pose_x;
-        wheel_odom_.pose.pose.position.y = raw_wheel_pose_y;
+        wheel_odom_.pose.pose.position.x = raw_wheel_pose_x_;
+        wheel_odom_.pose.pose.position.y = raw_wheel_pose_y_;
         wheel_odom_.pose.pose.position.z = 0.0;
         wheel_odom_.pose.pose.orientation.w = qtn.getW();
         wheel_odom_.pose.pose.orientation.x = qtn.getX();
@@ -520,12 +581,12 @@ namespace raspbot
          * The twist in this message should be specified 
          * in the coordinate frame given by the child_frame_id
          */  
-        wheel_odom_.twist.twist.linear.x=linearSpeed;
+        wheel_odom_.twist.twist.linear.x=linearSpeed_;
         wheel_odom_.twist.twist.linear.y=0;
         wheel_odom_.twist.twist.linear.z=0;
         wheel_odom_.twist.twist.angular.x=0;
         wheel_odom_.twist.twist.angular.y=0;
-        wheel_odom_.twist.twist.angular.z= angularSpeed;      //the speed  and orientation of the car in the car frame
+        wheel_odom_.twist.twist.angular.z= angularSpeed_;      //the speed  and orientation of the car in the car frame
 
         wheel_odom_.twist.covariance={0};
         
@@ -548,8 +609,8 @@ namespace raspbot
             cur_pose.header.seq = 0;
             cur_pose.header.stamp = ros::Time::now();
 
-            cur_pose.pose.position.x = raw_wheel_pose_x;
-            cur_pose.pose.position.y = raw_wheel_pose_y;
+            cur_pose.pose.position.x = raw_wheel_pose_x_;
+            cur_pose.pose.position.y = raw_wheel_pose_y_;
             cur_pose.pose.position.z = 0.0;
 
             cur_pose.pose.orientation.w = qtn.getW();
@@ -562,6 +623,14 @@ namespace raspbot
             wheel_path_pub_.publish(wheel_path_);
         }
   
+    }
+    void BotBase::publishSpeed()
+    {
+        speed_.linear = linearSpeed_;
+        speed_.anguar = angularSpeed_;
+        speed_.radius = turnRadius_;
+
+        speed_pub_.publish(speed_);
     }
 
     bool BotBase::sendFrame_Speed_dpkg(double speed,double yaw)

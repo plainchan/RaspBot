@@ -50,11 +50,9 @@ find_package(catkin REQUIRED COMPONENTS
 # Generate messages in the 'msg' folder
 add_message_files(
   FILES
-  RaspbotStatus.msg 
-)
-add_message_files(
-  FILES
-  RaspbotSpeed.msg
+  bot_encoder_debug.msg
+  bot_speed.msg 
+  bot_status.msg
 )
 
 ## Generate services in the 'srv' folder

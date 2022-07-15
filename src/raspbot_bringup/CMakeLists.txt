@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   tf2
   tf2_ros
+  raspbot_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -138,7 +139,7 @@ add_library(raspbot_base
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(${PROJECT_NAME}_node src/raspbot_bringup_node.cpp)
-add_executable(${PROJECT_NAME}__test_node src/raspbot_test.cpp)
+add_executable(${PROJECT_NAME}_test_node src/raspbot_test.cpp)
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
@@ -159,7 +160,7 @@ target_link_libraries(${PROJECT_NAME}_node
   raspbot_base
 )
 
-target_link_libraries(${PROJECT_NAME}__test_node
+target_link_libraries(${PROJECT_NAME}_test_node
   ${catkin_LIBRARIES}
 )
 
