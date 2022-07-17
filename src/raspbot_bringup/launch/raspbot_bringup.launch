@@ -5,12 +5,20 @@
     <arg name="odom_frame"       default="odom"/>
     <arg name="imu_frame"        default="imu_link"/>
 
-    <arg name="odom_topic"       default="wheel_odom"/>
-    <arg name="imu_topic"        default="imu/data"/>
-    <arg name="publish_odomTF"     default="true"/>
-
     <arg name="udev_port"        default="/dev/raspbot_com_port"/>
     <arg name="baud"             default="115200"/>
+
+    <arg name="odom_topic"       default="wheel_odom"/>
+    <arg name="imu_topic"        default="imu/data"/>
+    <arg name="twist_topic"      default="cmd_vel"/>
+    <arg name="speed_topic"      default="speed"/>
+    <arg name="encoder_debug_topic"      default="encoder_debug"/>
+
+    <arg name="publish_odomTF"   default="true"/>
+    <arg name="publish_speed"   default="true"/>
+    <arg name="publish_encoder_debug"   default="true"/>
+
+
 
     <!-- robot model -->
     <include file="$(find raspbot_description)/launch/raspbot_description.launch" />
@@ -19,10 +27,17 @@
         <arg name="base_frame"       value="$(arg base_frame)"/>
         <arg name="odom_frame"       value="$(arg odom_frame)"/>
         <arg name="udev_port"        value="$(arg udev_port)"/>
+        <arg name="baud"             value="$(arg baud)"/>
         <arg name="odom_topic"       value="$(arg odom_topic)"/>
         <arg name="imu_topic"        value="$(arg imu_topic)"/>
+        <arg name="twist_topic"        value="$(arg twist_topic)"/>
+        <arg name="speed_topic"        value="$(arg speed_topic)"/>
+        <arg name="encoder_debug_topic"        value="$(arg encoder_debug_topic)"/>
+
         <arg name="publish_odomTF"   value="$(arg publish_odomTF)"/>
-        <arg name="baud"             value="$(arg baud)"/>
+        <arg name="publish_speed"    value="$(arg publish_speed)"/>
+        <arg name="publish_encoder_debug"   value="$(arg publish_encoder_debug)"/>
+
     </include>
 
     <!-- <node pkg="raspbot_bringup"  type="raspbot_bringup__test_node" name="test_node" output="screen"/> -->

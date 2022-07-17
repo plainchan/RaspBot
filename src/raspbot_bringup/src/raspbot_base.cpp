@@ -30,6 +30,7 @@
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "raspbot_msgs/bot_speed.h"
+#include "raspbot_msgs/bot_encoder_debug.h"
 
 /**
  * rosparams:
@@ -67,6 +68,7 @@ namespace raspbot
           twist_topic_("cmd_vel"),
           speed_topic_("speed"),
           wheel_path_topic_("wheel_path"),
+          encoder_debug_topic_("encoder_debug"),
           raw_wheel_pose_x_(0.0),
           raw_wheel_pose_y_(0.0),
           raw_wheel_pose_theta_(0.0),
@@ -75,8 +77,8 @@ namespace raspbot
           turnRadius_(0.0),
           publish_odomTF_(false),
           publish_wheel_path_(false),
-          publish_speed_(false)
-          
+          publish_speed_(false),
+          publish_encoder_debug_(false)
 
           
     {
@@ -139,6 +141,7 @@ namespace raspbot
         odom_pub_ = nh_.advertise<nav_msgs::Odometry>(odom_topic_, 10);
         wheel_path_pub_ = nh_.advertise<nav_msgs::Path>(wheel_path_topic_,10);
         speed_pub_ = nh_.advertise<raspbot_msgs::bot_speed>(speed_topic_,10);
+        encoder_debug_pub_ = nh_.advertise<raspbot_msgs::bot_encoder_debug>(encoder_debug_topic_,10);
 
         //Timer
         periodicUpdateTimer_ = nh_.createTimer(ros::Duration(1. / frequency_), &BotBase::periodicUpdate, this);
@@ -162,8 +165,10 @@ namespace raspbot
         nhPrivate_.param<std::string>("twist_topic", twist_topic_, "cmd_vel");
 
         nhPrivate_.param<std::string>("speed_topic", speed_topic_, "speed");
-        nhPrivate_.param<bool>("publishSpeed", publish_speed_, false);
+        nhPrivate_.param<bool>("publish_speed", publish_speed_, false);
         
+        nhPrivate_.param<std::string>("encoder_debug_topic", encoder_debug_topic_, "encoder_debug");
+        nhPrivate_.param<bool>("publish_encoder_debug_", publish_encoder_debug_, false);
 
         nhPrivate_.param<std::string>("udev_port", udev_port_, "/dev/raspbot_com_port");
         nhPrivate_.param<int>("baud", baud_, 115200);
@@ -479,6 +484,8 @@ namespace raspbot
         {
             ROS_WARN_STREAM("Serial send failed");
         }
+        if(publish_encoder_debug_)
+            publishEncoderDebug(msg_ptr->linear.x,msg_ptr->angular.z);
     }
 
     void BotBase::publishIMU()
@@ -632,6 +639,22 @@ namespace raspbot
 
         speed_pub_.publish(speed_);
     }
+
+    void BotBase::publishEncoderDebug(double linear,double angular)
+    {
+
+        encoder_debug_.encoder_l = robot_msgs.l_encoder_pulse;
+        encoder_debug_.encoder_r = robot_msgs.r_encoder_pulse;
+
+	    float L_ideal_velocity = linear - angular * wheelTrack / 2;
+	    float R_ideal_velocity = linear + angular * wheelTrack / 2;
+
+        encoder_debug_.encoder_ideal_l = L_ideal_velocity * intervalTimer * PPR / (2 * wheelRadius * M_PI); 
+        encoder_debug_.encoder_ideal_r = R_ideal_velocity * intervalTimer * PPR / (2 * wheelRadius * M_PI); 
+        
+        encoder_debug_pub_.publish(encoder_debug_);
+    }
+
 
     bool BotBase::sendFrame_Speed_dpkg(double speed,double yaw)
     {

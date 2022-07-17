@@ -33,6 +33,7 @@
 #include "raspbot_bringup/raspbot_comm.hpp"
 #include "tf2_ros/transform_broadcaster.h"
 #include "raspbot_msgs/bot_speed.h"
+#include "raspbot_msgs/bot_encoder_debug.h"
 
 namespace raspbot
 {
@@ -133,6 +134,11 @@ public:
      */
     void publishSpeed();
 
+    /**
+     * @brief 发布编码器
+     * 
+     */
+    void publishEncoderDebug(double linear,double angular);
 
     bool sendFrame_Speed_dpkg(double speed=0.0,double yaw=0.0);
 
@@ -200,6 +206,14 @@ private:
     std::string       speed_topic_; 
     raspbot_msgs::bot_speed   speed_;
     bool              publish_speed_;
+
+    /**
+     * @brief encoder_debug发布管理
+     */
+    ros::Publisher    encoder_debug_pub_;
+    std::string       encoder_debug_topic_; 
+    raspbot_msgs::bot_encoder_debug   encoder_debug_;
+    bool              publish_encoder_debug_;
 
     /**
      * @brief tf坐标变换及广播发布
