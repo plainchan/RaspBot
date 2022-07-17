@@ -168,7 +168,7 @@ namespace raspbot
         nhPrivate_.param<bool>("publish_speed", publish_speed_, false);
         
         nhPrivate_.param<std::string>("encoder_debug_topic", encoder_debug_topic_, "encoder_debug");
-        nhPrivate_.param<bool>("publish_encoder_debug_", publish_encoder_debug_, false);
+        nhPrivate_.param<bool>("publish_encoder_debug", publish_encoder_debug_, false);
 
         nhPrivate_.param<std::string>("udev_port", udev_port_, "/dev/raspbot_com_port");
         nhPrivate_.param<int>("baud", baud_, 115200);
