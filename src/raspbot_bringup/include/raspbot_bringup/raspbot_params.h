@@ -6,7 +6,7 @@
 #define reduction_Ratio                  30       // 电机减速比
 #define encoder_line                     13       // 编码器线数
 #define multiplier_factor                4        // A/B相倍频因子
-#define PPR                   (reduction_Ratio*encoder_line)
+#define PPR                   (reduction_Ratio*encoder_line*multiplier_factor)
 
 #define wheelTrack                0.203f       //轮距
 #define wheelRadius               0.0325f       //轮胎半径
