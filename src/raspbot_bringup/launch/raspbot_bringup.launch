@@ -42,5 +42,5 @@
 
     <!-- <node pkg="raspbot_bringup"  type="raspbot_bringup__test_node" name="test_node" output="screen"/> -->
     
-    <node pkg="rviz" type="rviz" name="rviz" args="-d  $(find raspbot_bringup)/rviz/bringup.rviz" />
+    <!-- <node pkg="rviz" type="rviz" name="rviz" args="-d  $(find raspbot_bringup)/rviz/bringup.rviz" /> -->
 </launch>
