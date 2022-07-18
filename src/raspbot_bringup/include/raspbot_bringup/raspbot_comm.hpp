@@ -122,11 +122,13 @@
 #define imu_sensor_tag           0xD1
 #define imu_raw_tag              0xD2
 #define voltage_tag              0xE0  
+#define pid_tag                  0x70
 
 /**
  * @brief 数据包长度
  */
 #define speed_dpkg_len  (uint8_t)0x05
+#define pid_dpkg_len    (uint8_t)0x07
 
 
 /***********数据解包结构体定义***********/
@@ -319,7 +321,7 @@ typedef struct
 {
     int8_t  data_tag;
     int16_t velocity;             //real velocity = velocity/1000
-    int16_t yaw;                  //real yaw = yaw/1000      -3141<=yaw<=3141                 1 deg = 0.017453292 rad
+    int16_t angular;                  //real yaw = yaw/1000      -3141<=yaw<=3141                 1 deg = 0.017453292 rad
 }Speed_dpkg;
 /**
  * @brief 封装速度帧
@@ -332,6 +334,29 @@ typedef struct
     Speed_dpkg   speed;
     uint16_t     crc_dpkg;
 }Frame_Speed_dpkg;
+
+/**
+ * @brief PID数据包
+ */
+typedef struct 
+{
+    int8_t      data_tag;
+    int16_t     P;
+    int16_t     I;            
+    int16_t     D;                 
+}PID_dpkg;
+
+/**
+ * @brief 封装PID帧
+ */
+typedef struct 
+{
+    uint8_t      header[2];
+    uint8_t      len;
+    uint8_t      crc_head;
+    PID_dpkg     pid;
+    uint16_t     crc_dpkg;
+}Frame_PID_dpkg;
 
 #pragma pack()  //结束字节对齐
 

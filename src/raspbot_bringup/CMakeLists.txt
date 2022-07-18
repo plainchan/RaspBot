@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf2
   tf2_ros
   raspbot_msgs
+  dynamic_reconfigure
 )
 
 ## System dependencies are found with CMake's conventions
@@ -92,11 +93,11 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * uncomment the "generate_dynamic_reconfigure_options" section below
 ##     and list every .cfg file to be processed
 
-## Generate dynamic reconfigure parameters in the 'cfg' folder
-# generate_dynamic_reconfigure_options(
-#   cfg/DynReconf1.cfg
-#   cfg/DynReconf2.cfg
-# )
+# Generate dynamic reconfigure parameters in the 'cfg' folder
+generate_dynamic_reconfigure_options(
+  cfg/pid_debug.cfg
+
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -110,7 +111,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
  INCLUDE_DIRS include
  LIBRARIES raspbot_base
- CATKIN_DEPENDS geometry_msgs  roscpp rospy serial std_msgs 
+ CATKIN_DEPENDS geometry_msgs  roscpp rospy serial std_msgs raspbot_msgs
 #  DEPENDS system_lib
 )
 
@@ -126,14 +127,14 @@ include
 )
 
 ## Declare a C++ library
-add_library(raspbot_base
+add_library(raspbot_base 
   src/raspbot_base.cpp
 )
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
-# add_dependencies(${PROJECT_NAME} ${catkin_EXPORTED_TARGETS})
+add_dependencies(raspbot_base ${catkin_EXPORTED_TARGETS}  raspbot_msgs_gencpp)
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
@@ -148,7 +149,9 @@ add_executable(${PROJECT_NAME}_test_node src/raspbot_test.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-add_dependencies(${PROJECT_NAME}_node ${catkin_EXPORTED_TARGETS} raspbot_msgs_gencpp)
+# add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} )
+
+
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(raspbot_base

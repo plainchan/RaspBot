@@ -34,6 +34,8 @@
 #include "tf2_ros/transform_broadcaster.h"
 #include "raspbot_msgs/bot_speed.h"
 #include "raspbot_msgs/bot_encoder_debug.h"
+#include "dynamic_reconfigure/server.h"
+#include "raspbot_bringup/pid_debugConfig.h"
 
 namespace raspbot
 {
@@ -141,6 +143,9 @@ public:
     void publishEncoderDebug(double linear,double angular);
 
     bool sendFrame_Speed_dpkg(double speed=0.0,double yaw=0.0);
+    bool sendFrame_PID_dpkg(float p,float i,float d);
+
+    void dynamicPIDCallback(dynamic_pid::pid_debugConfig &config,uint32_t level);
 
 private:
 
@@ -214,6 +219,14 @@ private:
     std::string       encoder_debug_topic_; 
     raspbot_msgs::bot_encoder_debug   encoder_debug_;
     bool              publish_encoder_debug_;
+
+    /**
+     * @brief dynamic_reconfigure
+     */
+    dynamic_reconfigure::Server<dynamic_pid::pid_debugConfig> dynamic_pid_server_;
+    dynamic_reconfigure::Server<dynamic_pid::pid_debugConfig>::CallbackType dynamic_pid_callback_;
+
+
 
     /**
      * @brief tf坐标变换及广播发布

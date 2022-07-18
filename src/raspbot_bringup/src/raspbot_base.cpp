@@ -31,6 +31,10 @@
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "raspbot_msgs/bot_speed.h"
 #include "raspbot_msgs/bot_encoder_debug.h"
+#include "dynamic_reconfigure/server.h"
+#include "raspbot_bringup/pid_debugConfig.h"
+#include "functional"
+
 
 /**
  * rosparams:
@@ -110,19 +114,6 @@ namespace raspbot
     }
     BotBase::~BotBase()
     {
-
-        /* stop car  */
-        Frame_Speed_dpkg frame;
-        frame.header[0] = Header1;
-        frame.header[1] = Header2;
-        frame.len = 5;
-        frame.crc_head = 0;
-        frame.speed.data_tag = speed_tag;
-        frame.speed.velocity = 0;
-        frame.speed.yaw = 0;
-        std::vector<uint8_t> Bytes = structPack_Bytes<Frame_Speed_dpkg>(frame);
-        sp_.write(Bytes);
-
         /* stop car */
         sendFrame_Speed_dpkg();
 
@@ -142,6 +133,7 @@ namespace raspbot
         wheel_path_pub_ = nh_.advertise<nav_msgs::Path>(wheel_path_topic_,10);
         speed_pub_ = nh_.advertise<raspbot_msgs::bot_speed>(speed_topic_,10);
         encoder_debug_pub_ = nh_.advertise<raspbot_msgs::bot_encoder_debug>(encoder_debug_topic_,10);
+
 
         //Timer
         periodicUpdateTimer_ = nh_.createTimer(ros::Duration(1. / frequency_), &BotBase::periodicUpdate, this);
@@ -184,6 +176,16 @@ namespace raspbot
         ROS_INFO_STREAM("Timer:" << 1000.0/frequency_<<" ms");
 
         serial_init();
+
+        //dynamic_reconfigure
+        //use rqt plugin to change P,I,D
+        //Ang change will triger action which send pid to mcu by serial
+        //for debugging pid params conveniently
+        //use rqt_plot to check encoder pluse whether is suitable or not
+
+        // dynamic_pid_callback_ = boost::bind(&BotBase::dynamicPIDCallback,this,_1,_2);  // same as std::bind
+        dynamic_pid_callback_ = std::bind(&BotBase::dynamicPIDCallback,this,std::placeholders::_1,std::placeholders::_2);
+        dynamic_pid_server_.setCallback(dynamic_pid_callback_);
 
     }
 
@@ -488,6 +490,14 @@ namespace raspbot
             publishEncoderDebug(msg_ptr->linear.x,msg_ptr->angular.z);
     }
 
+    void BotBase::dynamicPIDCallback(dynamic_pid::pid_debugConfig &config,uint32_t level)
+    {
+        //print pid info
+        ROS_INFO_STREAM("P:"<< config.P <<"\tI:" << config.I <<"\tD:"<< config.D);
+        sendFrame_PID_dpkg(config.P,config.I,config.D);
+
+    }
+
     void BotBase::publishIMU()
     {
         imu_.header.frame_id = imu_frame_;
@@ -656,7 +666,7 @@ namespace raspbot
     }
 
 
-    bool BotBase::sendFrame_Speed_dpkg(double speed,double yaw)
+    bool BotBase::sendFrame_Speed_dpkg(double speed,double angular)
     {
         
         Frame_Speed_dpkg frame;
@@ -668,7 +678,7 @@ namespace raspbot
         
         frame.speed.data_tag = speed_tag;
         frame.speed.velocity = speed*1000;
-        frame.speed.yaw =yaw*1000;
+        frame.speed.angular = angular*1000;
         frame.crc_dpkg= 0;
 
         std::vector<uint8_t> Bytes = structPack_Bytes<Frame_Speed_dpkg>(frame);
@@ -679,15 +689,56 @@ namespace raspbot
         /* reset crc value  */
         setBuffCRCValue(Bytes,FRAME_DPKG_LEN_OFFSET,CRC8);
         setBuffCRCValue<uint16_t,2>(Bytes,FRAME_INFO_SIZE+speed_dpkg_len,CRC16);
-        // ROS_INFO("%d", CRC16);
-        // ROS_INFO("%d", Byte2U16(Bytes.data()+FRAME_INFO_SIZE+speed_dpkg_len));
 
-        // for(int i=0;i<Bytes.size();++i)
-        //     ROS_INFO("%d", Bytes[i]);
-        // ROS_INFO("%x", Bytes[5]);      //data_tag
-        // ROS_INFO("%.1f",(float) Byte2INT16(&Bytes[6])/1000.0);
-        // ROS_INFO("%.1f",(float) Byte2INT16(&Bytes[8])/1000.0);
-        // ROS_INFO("%d",Byte2U16(&Bytes[10]));    //crc16
+        // debug
+        // ROS_INFO("Header1:%x", Bytes[0]);      
+        // ROS_INFO("Header2:%x", Bytes[1]);    
+        // ROS_INFO("Len:%d", Bytes[2]);  
+        // ROS_INFO("crc:%d", Bytes[3]); 
+        // ROS_INFO("tag:%d", Bytes[4]); 
+        // ROS_INFO("velocity:%.2f",Byte2INT16(&Bytes[5])/1000.0);
+        // ROS_INFO("angular:%.2f",Byte2INT16(&Bytes[7])/1000.0);
+        // ROS_INFO("crc:%d",Byte2U16(&Bytes[9]));    
+
+
+        size_t send_count=sp_.write(Bytes);
+        return send_count==Bytes.size();
+    }
+    bool BotBase::sendFrame_PID_dpkg(float p,float i,float d)
+    {
+        
+        Frame_PID_dpkg frame;
+
+        frame.header[0] = Header1;
+        frame.header[1] = Header2;
+        frame.len = pid_dpkg_len;
+        frame.crc_head = 0;
+        
+        frame.pid.data_tag = pid_tag;
+        frame.pid.P = p*10;
+        frame.pid.I = i*10;
+        frame.pid.D = d*10;
+        frame.crc_dpkg= 0;
+
+        std::vector<uint8_t> Bytes = structPack_Bytes<Frame_PID_dpkg>(frame);
+
+        uint8_t CRC8  = crc_8(Bytes.data(),FRAME_CALCU_CRC_BYTES);
+        uint16_t CRC16 = crc_16(Bytes.data()+FRAME_INFO_SIZE,pid_dpkg_len);
+
+        /* reset crc value  */
+        setBuffCRCValue(Bytes,FRAME_DPKG_LEN_OFFSET,CRC8);
+        setBuffCRCValue<uint16_t,2>(Bytes,FRAME_INFO_SIZE+pid_dpkg_len,CRC16);
+
+        // debug
+        // ROS_INFO("Header1:%x", Bytes[0]);      
+        // ROS_INFO("Header2:%x", Bytes[1]);    
+        // ROS_INFO("Len:%d", Bytes[2]);  
+        // ROS_INFO("crc:%d", Bytes[3]); 
+        // ROS_INFO("tag:%d", Bytes[4]); 
+        // ROS_INFO("P:%.2f",Byte2INT16(&Bytes[5])/10.0);
+        // ROS_INFO("I:%.2f",Byte2INT16(&Bytes[7])/10.0);
+        // ROS_INFO("D:%.2f",Byte2INT16(&Bytes[9])/10.0);
+        // ROS_INFO("crc:%d",Byte2U16(&Bytes[11]));    
 
         size_t send_count=sp_.write(Bytes);
         return send_count==Bytes.size();
