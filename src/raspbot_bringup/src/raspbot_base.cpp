@@ -170,7 +170,7 @@ namespace raspbot
         if(frequency_>1000 ||frequency_<0)
         {
             ROS_FATAL_STREAM("Inappropriate frequency");
-            frequency_ = 50.0;
+            frequency_ = 100.0;
             ROS_WARN_STREAM("reset frequency" <<frequency_ <<"HZ" );
         }
         ROS_INFO_STREAM("Timer:" << 1000.0/frequency_<<" ms");
