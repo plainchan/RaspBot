@@ -245,7 +245,14 @@ namespace raspbot
     void BotBase::periodicUpdate(const ros::TimerEvent &event)
     {
 
-        //  resetParams();
+        // ROS_INFO_STREAM("run time:" << event.profile.last_duration  << "\n"
+        //                 "last_expected:" <<event.last_expected   << "\n"
+        //                 "current_expected:" <<event.current_expected << "\n"
+        //                 "last_real:" <<event.last_real << "\n"
+        //                 "current_real:" <<event.current_real << "\n"
+        //                 "last_expired:" <<event.last_expired << "\n"
+        //                 "current_expired:" <<event.current_expired << "\n"
+        // );
         // read and process serial buff
         size_t buff_size = sp_.available();
         if (buff_size)
