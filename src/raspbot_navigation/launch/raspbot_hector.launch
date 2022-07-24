@@ -4,11 +4,11 @@
     <arg name="scan_topic" default="scan"/>
     <arg name="base_frame" default="base_link"/>
     <arg name="odom_frame" default="odom"/>
-    <arg name="map_size" default="1000"/> 
-    <arg name="pub_map_odom_transform" default="true"/>    <!-- false,use wheel odom-->
+    <arg name="map_size" default="30"/> 
+    <arg name="pub_map_odom_transform" default="true"/>    
     <arg name="scan_subscriber_queue_size" default="5"/>
     <arg name="tf_map_scanmatch_transform_frame_name" default="scanmatcher_frame"/>
-    <arg name="pub_map_scanmatch_transform" default="false" />
+    <arg name="pub_map_scanmatch_transform" default="true" />
 
     <node pkg="hector_mapping" type="hector_mapping" name="hector_mapping" output="screen">
         
@@ -60,9 +60,7 @@
 
     </node>
     
-    <!-- publish map to odom transform -->
-    <node pkg="tf" type="static_transform_publisher" name="odom_baselink_broadcaster" args="0 0 0 0 0 0 odom  base_link   100"/>
-    <node pkg="tf" type="static_transform_publisher" name="baselink_lidar_broadcaster" args="0 0 1 0 0 0 base_link lidar_link   100"/>
+    
 
 </launch>
 
