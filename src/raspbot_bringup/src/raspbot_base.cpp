@@ -136,7 +136,7 @@ namespace raspbot
 
 
         //Timer
-        periodicUpdateTimer_ = nh_.createTimer(ros::Duration(1. / frequency_), &BotBase::periodicUpdate, this);
+        periodicUpdateTimer_ = nh_.createWallTimer(ros::WallDuration(1. / frequency_), &BotBase::periodicUpdate, this);
     }
 
     /* load params and subscribe topic  */
@@ -209,7 +209,7 @@ namespace raspbot
          *        write_timeout_constant     0       buff写入完成后不延时
          *        write_timeout_multiplier   1       buff读取完成后，延时写入的Bytes个时间(根据写入时间延迟*因子)[Recommand]
          */
-        serial::Timeout timeout(serial::Timeout::max(),0,0,2,0); //发送后延时2ms
+        serial::Timeout timeout(serial::Timeout::max(),0,0,0,2); //发送后延时2ms
         sp_.setTimeout(timeout);
 
         try
@@ -242,7 +242,7 @@ namespace raspbot
         
     }
 
-    void BotBase::periodicUpdate(const ros::TimerEvent &event)
+    void BotBase::periodicUpdate(const ros::WallTimerEvent &event)
     {
 
         // ROS_INFO_STREAM("run time:" << event.profile.last_duration  << "\n"
@@ -299,7 +299,7 @@ namespace raspbot
                     
 
                     /*  show params */
-// #define debug_robot_params
+#define debug_robot_params
 #ifdef  debug_robot_params
                     static int count=0;
                     if(++count>frequency_)

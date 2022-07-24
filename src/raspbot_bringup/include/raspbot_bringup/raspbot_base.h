@@ -91,7 +91,7 @@ public:
      * 
      * @param event 
      */
-    void periodicUpdate(const ros::TimerEvent &event);
+    void periodicUpdate(const ros::WallTimerEvent &event);
 
     /**
      * @brief    将数据流缓冲到Buff,数据流中可能只包含半帧或者多帧数据
@@ -160,7 +160,7 @@ private:
     /**
      * @brief  定时器
      */
-    ros::Timer        periodicUpdateTimer_;
+    ros::WallTimer        periodicUpdateTimer_;
     double            frequency_;
 
     /**

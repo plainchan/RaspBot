@@ -15,7 +15,7 @@
     <arg name="encoder_debug_topic"      default="encoder_debug"/>
 
     <arg name="publish_odomTF"   default="true"/>
-    <arg name="publish_wheel_path"   default="true"/>
+    <arg name="publish_wheel_path"   default="false"/>
     <arg name="publish_speed"   default="false"/>
     <arg name="publish_encoder_debug"   default="false"/>
 
