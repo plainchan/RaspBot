@@ -166,6 +166,8 @@ namespace raspbot
         nhPrivate_.param<int>("baud", baud_, 115200);
         
         nhPrivate_.param<double>("frequency", frequency_, 50);
+
+        nhPrivate_.param<bool>("en_dynamic_pid", en_dynamic_pid_, false);
         
         if(frequency_>1000 ||frequency_<0)
         {
@@ -499,10 +501,12 @@ namespace raspbot
 
     void BotBase::dynamicPIDCallback(dynamic_pid::pid_debugConfig &config,uint32_t level)
     {
-        //print pid info
-        ROS_INFO_STREAM("P:"<< config.P <<"\tI:" << config.I <<"\tD:"<< config.D);
-        sendFrame_PID_dpkg(config.P,config.I,config.D);
-
+        if(en_dynamic_pid_)
+        {
+            //print pid info
+            // ROS_INFO_STREAM("P:"<< config.P <<"\tI:" << config.I <<"\tD:"<< config.D);
+            sendFrame_PID_dpkg(config.P,config.I,config.D);
+        }
     }
 
     void BotBase::publishIMU()

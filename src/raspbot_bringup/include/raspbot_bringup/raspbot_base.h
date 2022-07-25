@@ -225,7 +225,7 @@ private:
      */
     dynamic_reconfigure::Server<dynamic_pid::pid_debugConfig> dynamic_pid_server_;
     dynamic_reconfigure::Server<dynamic_pid::pid_debugConfig>::CallbackType dynamic_pid_callback_;
-
+    bool              en_dynamic_pid_;
 
 
     /**
