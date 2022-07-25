@@ -71,7 +71,6 @@ namespace raspbot
           odom_topic_("wheel_odom"),
           twist_topic_("cmd_vel"),
           speed_topic_("speed"),
-          wheel_path_topic_("wheel_path"),
           encoder_debug_topic_("encoder_debug"),
           raw_wheel_pose_x_(0.0),
           raw_wheel_pose_y_(0.0),
@@ -80,7 +79,6 @@ namespace raspbot
           angularSpeed_(0.0),
           turnRadius_(0.0),
           publish_odomTF_(false),
-          publish_wheel_path_(false),
           publish_speed_(false),
           publish_encoder_debug_(false)
 
@@ -130,7 +128,6 @@ namespace raspbot
         //pub
         imu_pub_ = nh_.advertise<sensor_msgs::Imu>(imu_topic_, 10);
         odom_pub_ = nh_.advertise<nav_msgs::Odometry>(odom_topic_, 10);
-        wheel_path_pub_ = nh_.advertise<nav_msgs::Path>(wheel_path_topic_,10);
         speed_pub_ = nh_.advertise<raspbot_msgs::bot_speed>(speed_topic_,10);
         encoder_debug_pub_ = nh_.advertise<raspbot_msgs::bot_encoder_debug>(encoder_debug_topic_,10);
 
@@ -149,10 +146,6 @@ namespace raspbot
         nhPrivate_.param<std::string>("odom_topic", odom_topic_, "wheel/odom");
         nhPrivate_.param<std::string>("imu_topic", imu_topic_, "imu/data");
         nhPrivate_.param<bool>("publish_odomTF", publish_odomTF_, true);
-
-        nhPrivate_.param<std::string>("wheel_path_topic", wheel_path_topic_, "wheel/path");
-        nhPrivate_.param<bool>("publish_wheel_path", publish_wheel_path_, false);
-
 
         nhPrivate_.param<std::string>("twist_topic", twist_topic_, "cmd_vel");
 
@@ -255,6 +248,13 @@ namespace raspbot
         //                 "last_expired:" <<event.last_expired << "\n"
         //                 "current_expired:" <<event.current_expired << "\n"
         // );
+
+        const double loop_elapsed = (event.current_real - event.last_expected).toSec();
+        if (loop_elapsed > 2./frequency_)
+        {
+            ROS_WARN_STREAM("Failed to meet update rate! Took " << std::setprecision(20) << loop_elapsed);
+        }
+
         // read and process serial buff
         size_t buff_size = sp_.available();
         if (buff_size)
@@ -620,37 +620,6 @@ namespace raspbot
         
         odom_pub_.publish(wheel_odom_);
 
-
-        /*  publish wheel path  */
-        if(publish_wheel_path_)
-        {
-            static bool initHeader = true;
-            if(initHeader)
-            {
-                wheel_path_.header.frame_id = odom_frame_;
-                wheel_path_.header.seq = 20;
-                wheel_path_.header.stamp = ros::Time::now();
-                initHeader = false;
-            }
-            geometry_msgs::PoseStamped cur_pose;
-            cur_pose.header.frame_id = odom_frame_;
-            cur_pose.header.seq = 0;
-            cur_pose.header.stamp = ros::Time::now();
-
-            cur_pose.pose.position.x = raw_wheel_pose_x_;
-            cur_pose.pose.position.y = raw_wheel_pose_y_;
-            cur_pose.pose.position.z = 0.0;
-
-            cur_pose.pose.orientation.w = qtn.getW();
-            cur_pose.pose.orientation.x = qtn.getX();
-            cur_pose.pose.orientation.y = qtn.getY();
-            cur_pose.pose.orientation.z = qtn.getZ();
-
-            wheel_path_.poses.emplace_back(cur_pose);
-
-            wheel_path_pub_.publish(wheel_path_);
-        }
-  
     }
     void BotBase::publishSpeed()
     {

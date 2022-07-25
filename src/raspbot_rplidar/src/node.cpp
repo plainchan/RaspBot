@@ -197,19 +197,26 @@ int main(int argc, char * argv[]) {
     int tcp_port = 20108;
     std::string udp_ip;
     int udp_port = 8089;
+
     std::string serial_port;    
     int serial_baudrate = 115200;
+
     std::string frame_id;
+
     bool inverted = false;
+    float max_distance;
+    float scan_frequency;
+    std::string scan_mode;
+    
     bool angle_compensate = true;    
     float angle_compensate_multiple = 1.0;//min 360 ponits at per 1 degree
     int points_per_circle = 360;//min 360 ponits at per circle 
-    std::string scan_mode;
-    float max_distance;
-    float scan_frequency;
+
+
     ros::NodeHandle nh;
     ros::Publisher scan_pub = nh.advertise<sensor_msgs::LaserScan>("scan", 1000);
     ros::NodeHandle nh_private("~");
+
     nh_private.param<std::string>("channel_type", channel_type, "serial");
     nh_private.param<std::string>("tcp_ip", tcp_ip, "192.168.0.7"); 
     nh_private.param<int>("tcp_port", tcp_port, 20108);
@@ -221,6 +228,7 @@ int main(int argc, char * argv[]) {
     nh_private.param<bool>("inverted", inverted, false);
     nh_private.param<bool>("angle_compensate", angle_compensate, false);
     nh_private.param<std::string>("scan_mode", scan_mode, std::string());
+
     if(channel_type == "udp"){
         nh_private.param<float>("scan_frequency", scan_frequency, 20.0);
     }
@@ -238,6 +246,7 @@ int main(int argc, char * argv[]) {
     // create the driver instance
     drv = *createLidarDriver();
     IChannel* _channel;
+    
     if(channel_type == "tcp"){
         _channel = *createTcpChannel(tcp_ip, tcp_port);
     }

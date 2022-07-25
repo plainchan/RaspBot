@@ -10,7 +10,6 @@ int main(int argc, char **argv)
 {
 	ros::init(argc,argv,"raspbot_broadcaster_node");
     ros::NodeHandle nh("");
-    ros::Publisher pub = nh.advertise<geometry_msgs::Twist>("cmd_vel",10);
     ros::Rate r(20);
 
     while(ros::ok)

@@ -182,13 +182,6 @@ private:
     std::string         odom_topic_;
     bool                publish_odomTF_;
 
-    /**
-     * @brief 轨迹路径发布管理
-     */
-    ros::Publisher      wheel_path_pub_;
-    nav_msgs::Path      wheel_path_;
-    std::string         wheel_path_topic_;
-    bool                publish_wheel_path_;
 
     /**
      * @brief IMU发布管理
