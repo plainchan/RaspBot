@@ -161,7 +161,7 @@ private:
      * @brief  定时器
      */
     ros::WallTimer        periodicUpdateTimer_;
-    double            frequency_;
+    double                frequency_;
 
     /**
      * @brief  car params
@@ -190,6 +190,7 @@ private:
     ros::Publisher    imu_pub_;
     sensor_msgs::Imu  imu_;
     std::string       imu_topic_;
+    bool              publish_imu_;
 
     /**
      * @brief Twist订阅管理
@@ -258,8 +259,8 @@ private:
     /**
      * @brief serial data update flag
      */
-    bool imu_updated;
-    bool encoder_updated;
+    bool imu_updated_;
+    bool encoder_updated_;
 
 };
 

@@ -16,6 +16,8 @@ int main(int argc, char **argv)
 	ros::init(argc,argv,"raspbot_visualpath_node");
     ros::NodeHandle nh(""),_nh("~");
 
+    ros::Rate r(10);
+
     std::string  wheel_path_topic = _nh.param<std::string>("wheel_path_topic","wheel/path");
     std::string  odom_topic = _nh.param<std::string>("odom_topic","wheel/odom");
     odom_frame = _nh.param<std::string>("odom_frame","odom");
@@ -25,13 +27,14 @@ int main(int argc, char **argv)
     wheel_path.header.stamp = ros::Time::now();
 
 
-    nh.subscribe<nav_msgs::Odometry>(odom_topic, 50, &OdomCallBack);
+    ros::Subscriber odom_sub = nh.subscribe<nav_msgs::Odometry>(odom_topic, 50, &OdomCallBack);
     wheel_path_pub= nh.advertise<nav_msgs::Path>(wheel_path_topic,1000);
 
 
     while(ros::ok)
     {
         wheel_path_pub.publish(wheel_path);
+        r.sleep();
         ros::spinOnce();
     }
     
@@ -47,8 +50,9 @@ int main(int argc, char **argv)
 
 void OdomCallBack(const nav_msgs::Odometry::ConstPtr &odom_msg)
 {
-    if(odom_msg->pose.pose == wheel_path.poses.back().pose)
+    if(!wheel_path.poses.empty() && wheel_path.poses.back().pose == odom_msg->pose.pose )
         return;
+    
     geometry_msgs::PoseStamped cur_pose;
     cur_pose.header.frame_id = odom_frame;
     cur_pose.header.stamp = ros::Time::now();

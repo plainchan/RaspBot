@@ -142,6 +142,7 @@ add_dependencies(raspbot_base ${catkin_EXPORTED_TARGETS}  raspbot_msgs_gencpp)
 add_executable(${PROJECT_NAME}_node src/raspbot_bringup_node.cpp)
 add_executable(${PROJECT_NAME}_visualpath_node src/raspbot_visualpath_node.cpp)
 add_executable(${PROJECT_NAME}_broadcaster_node src/raspbot_broadcaster_node.cpp)
+add_executable(${PROJECT_NAME}_test_node src/raspbot_test_node.cpp)
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
@@ -159,17 +160,24 @@ target_link_libraries(raspbot_base
   ${catkin_LIBRARIES}
 )
 
+target_link_libraries(${PROJECT_NAME}_visualpath_node
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(${PROJECT_NAME}_broadcaster_node
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(${PROJECT_NAME}_test_node
+  ${catkin_LIBRARIES}
+)
+
 target_link_libraries(${PROJECT_NAME}_node
   ${catkin_LIBRARIES}
   raspbot_base
 )
 
-target_link_libraries(${PROJECT_NAME}_visualpath_node
-  ${catkin_LIBRARIES}
-)
-target_link_libraries(${PROJECT_NAME}_broadcaster_node
-  ${catkin_LIBRARIES}
-)
+
 
 #############
 ## Install ##

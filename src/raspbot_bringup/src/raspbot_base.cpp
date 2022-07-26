@@ -80,7 +80,10 @@ namespace raspbot
           turnRadius_(0.0),
           publish_odomTF_(false),
           publish_speed_(false),
-          publish_encoder_debug_(false)
+          publish_encoder_debug_(false),
+          publish_imu_(false),
+          imu_updated_(false),
+          encoder_updated_(false)
 
           
     {
@@ -118,72 +121,6 @@ namespace raspbot
         sp_.close();
     }
 
-    void BotBase::initialize()
-    {
-        setting();
-
-        //sub
-        twist_sub_ = nh_.subscribe<geometry_msgs::Twist>(twist_topic_, 10, &BotBase::speedTwistCallBack, this);
-       
-        //pub
-        imu_pub_ = nh_.advertise<sensor_msgs::Imu>(imu_topic_, 10);
-        odom_pub_ = nh_.advertise<nav_msgs::Odometry>(odom_topic_, 10);
-        speed_pub_ = nh_.advertise<raspbot_msgs::bot_speed>(speed_topic_,10);
-        encoder_debug_pub_ = nh_.advertise<raspbot_msgs::bot_encoder_debug>(encoder_debug_topic_,10);
-
-
-        //Timer
-        periodicUpdateTimer_ = nh_.createWallTimer(ros::WallDuration(1. / frequency_), &BotBase::periodicUpdate, this);
-    }
-
-    /* load params and subscribe topic  */
-    void BotBase::setting()
-    {
-        nhPrivate_.param<std::string>("base_frame", base_frame_, "base_link");
-        nhPrivate_.param<std::string>("odom_frame", odom_frame_, "odom");
-        nhPrivate_.param<std::string>("imu_frame", imu_frame_, "imu_link");
-
-        nhPrivate_.param<std::string>("odom_topic", odom_topic_, "wheel/odom");
-        nhPrivate_.param<std::string>("imu_topic", imu_topic_, "imu/data");
-        nhPrivate_.param<bool>("publish_odomTF", publish_odomTF_, true);
-
-        nhPrivate_.param<std::string>("twist_topic", twist_topic_, "cmd_vel");
-
-        nhPrivate_.param<std::string>("speed_topic", speed_topic_, "speed");
-        nhPrivate_.param<bool>("publish_speed", publish_speed_, false);
-        
-        nhPrivate_.param<std::string>("encoder_debug_topic", encoder_debug_topic_, "encoder_debug");
-        nhPrivate_.param<bool>("publish_encoder_debug", publish_encoder_debug_, false);
-
-        nhPrivate_.param<std::string>("udev_port", udev_port_, "/dev/raspbot_com_port");
-        nhPrivate_.param<int>("baud", baud_, 115200);
-        
-        nhPrivate_.param<double>("frequency", frequency_, 50);
-
-        nhPrivate_.param<bool>("en_dynamic_pid", en_dynamic_pid_, false);
-        
-        if(frequency_>1000 ||frequency_<0)
-        {
-            ROS_FATAL_STREAM("Inappropriate frequency");
-            frequency_ = 100.0;
-            ROS_WARN_STREAM("reset frequency" <<frequency_ <<"HZ" );
-        }
-        ROS_INFO_STREAM("Timer:" << 1000.0/frequency_<<" ms");
-
-        serial_init();
-
-        //dynamic_reconfigure
-        //use rqt plugin to change P,I,D
-        //Ang change will triger action which send pid to mcu by serial
-        //for debugging pid params conveniently
-        //use rqt_plot to check encoder pluse whether is suitable or not
-
-        // dynamic_pid_callback_ = boost::bind(&BotBase::dynamicPIDCallback,this,_1,_2);  // same as std::bind
-        dynamic_pid_callback_ = std::bind(&BotBase::dynamicPIDCallback,this,std::placeholders::_1,std::placeholders::_2);
-        dynamic_pid_server_.setCallback(dynamic_pid_callback_);
-
-    }
-
     bool BotBase::serial_init()
     {
         sp_.setPort(udev_port_);
@@ -196,15 +133,15 @@ namespace raspbot
         /**
          * @brief brief 读取或写入数据之后，延时一段时间,以使读取完成或发送完成
          * @note  接收时未使用timeout,使用定时器周期读取串口，使用available()检测串口是否有数据，有数据则处理，cpu数据很快
-         *        发送时使用timeout,发送是订阅cmd_vel话题,由于cmd_vel话题频率通常小于50HZ，所以也可不用设置
+         *  
          * @bug     
          * @param inter_byte_timeout serial::Timeout::max()  禁止读取每个字节时延时
          *        read_timeout_constant      0       buff读取完成后不延时
          *        read_timeout_multiplier    0       buff读取完成后，不延时读取的Bytes个时间
          *        write_timeout_constant     0       buff写入完成后不延时
-         *        write_timeout_multiplier   1       buff读取完成后，延时写入的Bytes个时间(根据写入时间延迟*因子)[Recommand]
+         *        write_timeout_multiplier   1       buff写入完成后，延时写入的Bytes个时间(根据写入时间延迟*因子)[Recommand]
          */
-        serial::Timeout timeout(serial::Timeout::max(),0,0,0,2); //发送后延时2ms
+        serial::Timeout timeout(serial::Timeout::max(),0,0,0,2); //发送后延时
         sp_.setTimeout(timeout);
 
         try
@@ -237,6 +174,70 @@ namespace raspbot
         
     }
 
+    /* load params and subscribe topic  */
+    void BotBase::setting()
+    {
+        nhPrivate_.param<std::string>("base_frame", base_frame_, "base_link");
+        nhPrivate_.param<std::string>("odom_frame", odom_frame_, "odom");
+        nhPrivate_.param<std::string>("imu_frame", imu_frame_, "imu_link");
+
+        nhPrivate_.param<double>("frequency", frequency_, 100);
+        nhPrivate_.param<std::string>("udev_port", udev_port_, "/dev/raspbot_com_port");
+        nhPrivate_.param<int>("baud", baud_, 460800);
+
+        nhPrivate_.param<std::string>("odom_topic", odom_topic_, "wheel/odom");
+        nhPrivate_.param<std::string>("imu_topic", imu_topic_, "imu/data");
+        nhPrivate_.param<std::string>("twist_topic", twist_topic_, "cmd_vel");
+        nhPrivate_.param<std::string>("speed_topic", speed_topic_, "speed");
+        nhPrivate_.param<std::string>("encoder_debug_topic", encoder_debug_topic_, "encoder_debug");
+
+        nhPrivate_.param<bool>("publish_odomTF", publish_odomTF_, true);
+        nhPrivate_.param<bool>("publish_imu", publish_imu_, true);
+        nhPrivate_.param<bool>("publish_speed", publish_speed_, false);
+        nhPrivate_.param<bool>("publish_encoder_debug", publish_encoder_debug_, false);
+        
+
+        nhPrivate_.param<bool>("en_dynamic_pid", en_dynamic_pid_, false);
+        
+        if(frequency_>1000 ||frequency_<0)
+        {
+            ROS_FATAL_STREAM("Inappropriate frequency");
+            frequency_ = 100.0;
+            ROS_WARN_STREAM("reset frequency" <<frequency_ <<"HZ" );
+        }
+        ROS_INFO_STREAM("Timer:" << 1000.0/frequency_<<" ms");
+
+        serial_init();
+
+        //dynamic_reconfigure
+        //use rqt plugin to change P,I,D
+        //Ang change will triger action which send pid to mcu by serial
+        //for debugging pid params conveniently
+        //use rqt_plot to check encoder pluse whether is suitable or not
+        // dynamic_pid_callback_ = boost::bind(&BotBase::dynamicPIDCallback,this,_1,_2);  // same as std::bind
+        dynamic_pid_callback_ = std::bind(&BotBase::dynamicPIDCallback,this,std::placeholders::_1,std::placeholders::_2);
+        dynamic_pid_server_.setCallback(dynamic_pid_callback_);
+
+    }
+
+    void BotBase::initialize()
+    {
+        setting();
+
+        //sub
+        twist_sub_ = nh_.subscribe<geometry_msgs::Twist>(twist_topic_, 10, &BotBase::speedTwistCallBack, this);
+       
+        //pub
+        imu_pub_ = nh_.advertise<sensor_msgs::Imu>(imu_topic_, 10);
+        odom_pub_ = nh_.advertise<nav_msgs::Odometry>(odom_topic_, 10);
+        speed_pub_ = nh_.advertise<raspbot_msgs::bot_speed>(speed_topic_,10);
+        encoder_debug_pub_ = nh_.advertise<raspbot_msgs::bot_encoder_debug>(encoder_debug_topic_,10);
+
+
+        //Timer
+        periodicUpdateTimer_ = nh_.createWallTimer(ros::WallDuration(1. / frequency_), &BotBase::periodicUpdate, this);
+    }
+    
     void BotBase::periodicUpdate(const ros::WallTimerEvent &event)
     {
 
@@ -252,7 +253,7 @@ namespace raspbot
         const double loop_elapsed = (event.current_real - event.last_expected).toSec();
         if (loop_elapsed > 2./frequency_)
         {
-            ROS_WARN_STREAM("Failed to meet update rate! Took " << std::setprecision(20) << loop_elapsed);
+            ROS_WARN_STREAM("Failed to meet update rate! Took " << std::setprecision(8) << loop_elapsed);
         }
 
         // read and process serial buff
@@ -288,20 +289,20 @@ namespace raspbot
             {
                 if (parse_stream(stream_msgs, RxBuff[i]) == 1)
                 {   
-                    if(imu_updated)
+                    if(imu_updated_ && publish_imu_)
                         publishIMU();
-                    if(encoder_updated)
+                    if(encoder_updated_)
                     {
                         if(publish_odomTF_) publishTransformAndOdom();
                         if(publish_speed_)  publishSpeed();
                     }
 
-                    imu_updated = false;
-                    encoder_updated = false;
+                    imu_updated_ = false;
+                    encoder_updated_ = false;
                     
 
                     /*  show params */
-#define debug_robot_params
+// #define debug_robot_params
 #ifdef  debug_robot_params
                     static int count=0;
                     if(++count>frequency_)
@@ -366,7 +367,7 @@ namespace raspbot
             {
                 ROS_WARN_STREAM("Erro of header's CRC");
                 bytesCount = 0;
-                return -1; //校验错误
+                return -2; //校验错误
             }
 
         }
@@ -378,7 +379,7 @@ namespace raspbot
             if(stream_msgs.crc!=crc_16(&stream_msgs.stream_buff[FRAME_INFO_SIZE],stream_msgs.len))
             {
                 ROS_WARN_STREAM("Erro of data's CRC");
-                return -1; //校验错误
+                return -2; //校验错误
             }
             return decode_frame(stream_msgs);
         }
@@ -401,7 +402,7 @@ namespace raspbot
 
                 robot_msgs.l_encoder_pulse = Byte2INT16(&buff[offset+1]);offset+=2;
                 robot_msgs.r_encoder_pulse = Byte2INT16(&buff[offset+1]);offset+=2; 
-                encoder_updated = true;
+                encoder_updated_ = true;
 
                 robot_msgs.acc[0] = Byte2Float(&buff[offset+1]);offset+=4;
                 robot_msgs.acc[1] = Byte2Float(&buff[offset+1]);offset+=4;
@@ -418,7 +419,7 @@ namespace raspbot
                 robot_msgs.elu[0] = Byte2Float(&buff[offset+1]);offset+=4;
                 robot_msgs.elu[1] = Byte2Float(&buff[offset+1]);offset+=4;
                 robot_msgs.elu[2] = Byte2Float(&buff[offset+1]);offset+=4;
-                imu_updated = true;
+                imu_updated_ = true;
                 break; /* robot_tag */
             case voltage_tag:
                 robot_msgs.voltage = ((float)buff[++offset])/10.0;
@@ -426,7 +427,7 @@ namespace raspbot
             case encoder_tag:
                 robot_msgs.l_encoder_pulse = Byte2INT16(&buff[offset+1]);offset+=2;
                 robot_msgs.r_encoder_pulse = Byte2INT16(&buff[offset+1]);offset+=2;
-                encoder_updated = true;
+                encoder_updated_ = true;
                 break; /* encoder_tag */
             case imu_tag:
                 robot_msgs.acc[0] = Byte2Float(&buff[offset+1]);offset+=4;
@@ -444,7 +445,7 @@ namespace raspbot
                 robot_msgs.elu[0] = Byte2Float(&buff[offset+1]);offset+=4;
                 robot_msgs.elu[1] = Byte2Float(&buff[offset+1]);offset+=4;
                 robot_msgs.elu[2] = Byte2Float(&buff[offset+1]);offset+=4;
-                imu_updated = true;
+                imu_updated_ = true;
                 break; /* imu_tag */
             case imu_sensor_tag:
                 robot_msgs.acc[0] = Byte2Float(&buff[offset+1]);offset+=4;
@@ -459,7 +460,7 @@ namespace raspbot
                 robot_msgs.mag[1] = Byte2Float(&buff[offset+1]);offset+=4;
                 robot_msgs.mag[2] = Byte2Float(&buff[offset+1]);offset+=4;
         #endif  
-                imu_updated = true;
+                imu_updated_ = true;
                 break; /* imu_sensor_tag */
             case imu_raw_tag:
                 robot_msgs.acc[0] = Byte2INT16(&buff[offset+1])*accRatio;offset+=2;
@@ -477,7 +478,7 @@ namespace raspbot
                 robot_msgs.elu[0] = Byte2INT16(&buff[offset+1])*eluRatio;offset+=2;
                 robot_msgs.elu[1] = Byte2INT16(&buff[offset+1])*eluRatio;offset+=2;
                 robot_msgs.elu[2] = Byte2INT16(&buff[offset+1])*eluRatio;offset+=2;
-                imu_updated = true;
+                imu_updated_ = true;
                 break; /* imu_raw_tag */
 
             default:
