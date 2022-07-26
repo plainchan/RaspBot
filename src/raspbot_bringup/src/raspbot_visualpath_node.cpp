@@ -16,10 +16,10 @@ int main(int argc, char **argv)
 	ros::init(argc,argv,"raspbot_visualpath_node");
     ros::NodeHandle nh(""),_nh("~");
 
-    ros::Rate r(10);
+    ros::Rate r(1);
 
     std::string  wheel_path_topic = _nh.param<std::string>("wheel_path_topic","wheel/path");
-    std::string  odom_topic = _nh.param<std::string>("odom_topic","wheel/odom");
+    std::string  odom_topic = _nh.param<std::string>("odom_topic","odom");
     odom_frame = _nh.param<std::string>("odom_frame","odom");
 
 
@@ -35,6 +35,7 @@ int main(int argc, char **argv)
     {
         wheel_path_pub.publish(wheel_path);
         r.sleep();
+        // ROS_INFO("here");
         ros::spinOnce();
     }
     
@@ -60,4 +61,5 @@ void OdomCallBack(const nav_msgs::Odometry::ConstPtr &odom_msg)
     cur_pose.pose.position= odom_msg->pose.pose.position;
     cur_pose.pose.orientation= odom_msg->pose.pose.orientation;
     wheel_path.poses.emplace_back(cur_pose);
+    // ROS_INFO_STREAM(wheel_path.poses.size());
 }
