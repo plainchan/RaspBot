@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+
+<launch>
+
+    <arg name="odom_frame"              default="odom"/>
+    <arg name="odom_topic"              default="wheel/odom"/>
+    <arg name="wheel_path_topic"        default="wheel/path"/>
+
+    <!-- occupy memory and assume much time -->
+    <node pkg="raspbot_visual"  type="raspbot_visual_node" name="raspbot_visual_node" output="screen" >
+        <param name="odom_frame"            type="string"        value="$(arg odom_frame)"/>
+        <param name="odom_topic"            type="string"        value="$(arg odom_topic)"/>
+        <param name="wheel_path_topic"      type="string"        value="$(arg wheel_path_topic)"/>
+    </node>
+
+</launch>

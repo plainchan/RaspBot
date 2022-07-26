@@ -1,12 +1,11 @@
 <?xml version="1.0"?>
 <launch>
     <node name="nmea_navsat_driver" pkg="nmea_navsat_driver" type="nmea_serial_driver" output="screen">
-      <param name="port" value="/dev/ttyUSB0" />
+      <param name="port" value="/dev/raspbot_gps_com_port" />
       <param name="frame_id" value="gps" />
       <param name="baud" value="115200" />
       <param name="time_ref_source" value="gps" />
       <param name="useRMC" value="False" />
-      
     </node>
 </launch>
 

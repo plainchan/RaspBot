@@ -19,7 +19,7 @@ int main(int argc, char **argv)
     ros::Rate r(1);
 
     std::string  wheel_path_topic = _nh.param<std::string>("wheel_path_topic","wheel/path");
-    std::string  odom_topic = _nh.param<std::string>("odom_topic","odom");
+    std::string  odom_topic = _nh.param<std::string>("odom_topic","wheel/odom");
     odom_frame = _nh.param<std::string>("odom_frame","odom");
 
 
