@@ -1,12 +1,22 @@
 <?xml version="1.0"?>
 <launch>
-    <node name="nmea_navsat_driver" pkg="nmea_navsat_driver" type="nmea_serial_driver" output="screen">
-      <param name="port" value="/dev/raspbot_gps_com_port" />
-      <param name="frame_id" value="gps" />
-      <param name="baud" value="115200" />
-      <param name="time_ref_source" value="gps" />
-      <param name="useRMC" value="False" />
-    </node>
+  <!-- A simple launch file for the nmea_serial_driver node. -->
+
+  <arg name="port" default="/dev/ttyUSB0" />
+  <arg name="baud" default="115200" />
+  <arg name="frame_id" default="gps" />
+  <arg name="use_GNSS_time" default="false" />
+  <arg name="time_ref_source" default="gps" />
+  <arg name="useRMC" default="false" />
+
+  <node name="nmea_serial_driver_node" pkg="nmea_navsat_driver" type="nmea_serial_driver" output="screen">
+    <param name="port" value="$(arg port)"/>
+    <param name="baud" value="$(arg baud)" />
+    <param name="frame_id" value="$(arg frame_id)" />
+    <param name="use_GNSS_time" value="$(arg use_GNSS_time)" />
+    <param name="time_ref_source" value="$(arg time_ref_source)" />
+    <param name="useRMC" value="$(arg useRMC)" />
+  </node>
 </launch>
 
 <!-- 
