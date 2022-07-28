@@ -55,13 +55,86 @@ void publish_scan(ros::Publisher *pub,
                   float max_distance,
                   std::string frame_id)
 {
-    static int scan_count = 0;
     sensor_msgs::LaserScan scan_msg;
 
     scan_msg.header.stamp = start;
     scan_msg.header.frame_id = frame_id;
-    scan_count++;
+
+#define mask_scan
+
+#if define mask_scan
+ 
+    scan_msg.angle_min =  M_PI - angle_max;
+    scan_msg.angle_max =  M_PI - angle_min;
+
+    scan_msg.angle_increment =
+        (scan_msg.angle_max - scan_msg.angle_min) / (double)(node_count-1);
+
+    scan_msg.scan_time = scan_time;
+    scan_msg.time_increment = scan_time / (double)(node_count-1);
+    scan_msg.range_min = 0.15;
+    scan_msg.range_max = max_distance;//8.0;
+
+    scan_msg.intensities.resize(node_count);
+    scan_msg.ranges.resize(node_count);
+    float angle_range= angle_max-angle_min;
+    for (size_t i = 0; i < node_count; i++) {
+        float read_value = (float) nodes[i].dist_mm_q2/4.0f/1000;
+
+        float angle_offset = angle_range*i/(node_count-1);
+        // in frame frame_id, angles are measured around 
+        // the positive Z axis (counterclockwise, if Z is up)
+        // with zero angle being forward along the x axis
+        if(angle_offset<=180.0)angle_offset = -angle_offset;
+        else angle_offset = 360-angle_offset;
+
+        if (read_value == 0.0 || angle_offset<scan_min_angle || angle_offset> scan_max_angle)
+            scan_msg.ranges[i] = std::numeric_limits<float>::infinity();
+        else
+            scan_msg.ranges[i] = read_value;
+        scan_msg.intensities[i] = (float) (nodes[i].quality >> 2);
+    }
     
+#elif define slice_scan
+    scan_msg.angle_min = scan_min_angle;
+    scan_msg.angle_max = scan_max_angle;
+
+    float angle_range= angle_max-angle_min;
+    
+    int reserve_size = (int)(node_count*(scan_max_angle-scan_min_angle)/angle_range);
+    scan_msg.ranges.reserve(reserve_size);
+    scan_msg.intensities.reserve(reserve_size);
+
+    
+    
+    for (size_t i = node_count-1; i >=0 ; --i) {
+        float read_value = (float) nodes[i].dist_mm_q2/4.0f/1000;
+        float angle_offset = angle*i/(node_count-1);
+
+        // in frame frame_id, angles are measured around 
+        // the positive Z axis (counterclockwise, if Z is up)
+        // with zero angle being forward along the x axis
+        if(angle_offset<=180.0)angle_offset = -angle_offset;
+        else angle_offset = 360-angle_offset;
+        if(angle_offset<scan_min_angle || angle_offset>scan_max_angle)
+        {
+            if (read_value == 0.0)
+                scan_msg.ranges.emplace_back(std::numeric_limits<float>::infinity());
+            else
+                scan_msg.ranges.emplace_back(read_value);
+            scan_msg.intensities.emplace_back((float) (nodes[i].quality >> 2));
+        }
+    }
+
+    scan_msg.angle_increment =
+        (angle_max - angle_min) / (double)(node_count-1);
+
+    
+    scan_msg.time_increment = scan_time / (double)(node_count-1);
+    scan_msg.scan_time = scan_msg.time_increment*scan_msg.ranges.size();
+    scan_msg.range_min = 0.15;
+    scan_msg.range_max = max_distance;//8.0;
+#else
     bool reversed = (angle_max > angle_min);
     if ( reversed ) {
       scan_msg.angle_min =  M_PI - angle_max;
@@ -101,7 +174,10 @@ void publish_scan(ros::Publisher *pub,
         }
     }
 
+#endif
+
     pub->publish(scan_msg);
+
 }
 
 bool getRPLIDARDeviceInfo(ILidarDriver * drv)
@@ -229,6 +305,11 @@ int main(int argc, char * argv[]) {
     nh_private.param<bool>("angle_compensate", angle_compensate, false);
     nh_private.param<std::string>("scan_mode", scan_mode, std::string());
 
+
+    //ros 坐标系下的切片扫描角度
+    float scan_min_angle =  nh_private.param<float>("min_angle", -180.0);
+    float scan_max_angle =  nh_private.param<float>("max_angle", 180.0);
+
     if(channel_type == "udp"){
         nh_private.param<float>("scan_frequency", scan_frequency, 20.0);
     }
@@ -348,7 +429,7 @@ int main(int argc, char * argv[]) {
             float angle_max = DEG2RAD(360.0f);
             if (op_result == SL_RESULT_OK) {
                 if (angle_compensate) {
-                                      const int angle_compensate_nodes_count = 360*angle_compensate_multiple;
+                    const int angle_compensate_nodes_count = 360*angle_compensate_multiple;
                     int angle_compensate_offset = 0;
                     sl_lidar_response_measurement_node_hq_t angle_compensate_nodes[angle_compensate_nodes_count];
                     memset(angle_compensate_nodes, 0, angle_compensate_nodes_count*sizeof(sl_lidar_response_measurement_node_hq_t));
