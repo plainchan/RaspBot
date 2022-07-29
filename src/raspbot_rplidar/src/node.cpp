@@ -37,6 +37,7 @@
 #include "std_srvs/Empty.h"
 #include "sl_lidar.h" 
 
+
 #ifndef _countof
 #define _countof(_Array) (int)(sizeof(_Array) / sizeof(_Array[0]))
 #endif
@@ -46,6 +47,8 @@
 using namespace sl;
 
 ILidarDriver * drv = NULL;
+
+#define mask_scan
 
 void publish_scan(ros::Publisher *pub,
                   sl_lidar_response_measurement_node_hq_t *nodes,
@@ -60,13 +63,20 @@ void publish_scan(ros::Publisher *pub,
     scan_msg.header.stamp = start;
     scan_msg.header.frame_id = frame_id;
 
-#define mask_scan
 
-#if define mask_scan
+
+#if defined mask_scan
+    
+    //不在角度范围之内的都设置成inf
  
-    scan_msg.angle_min =  M_PI - angle_max;
-    scan_msg.angle_max =  M_PI - angle_min;
-
+ bool reversed = (angle_max > angle_min);
+    if ( reversed ) {
+      scan_msg.angle_min =  M_PI - angle_max;
+      scan_msg.angle_max =  M_PI - angle_min;
+    } else {
+      scan_msg.angle_min =  M_PI - angle_min;
+      scan_msg.angle_max =  M_PI - angle_max;
+    }
     scan_msg.angle_increment =
         (scan_msg.angle_max - scan_msg.angle_min) / (double)(node_count-1);
 
@@ -77,25 +87,28 @@ void publish_scan(ros::Publisher *pub,
 
     scan_msg.intensities.resize(node_count);
     scan_msg.ranges.resize(node_count);
-    float angle_range= angle_max-angle_min;
-    for (size_t i = 0; i < node_count; i++) {
-        float read_value = (float) nodes[i].dist_mm_q2/4.0f/1000;
-
-        float angle_offset = angle_range*i/(node_count-1);
-        // in frame frame_id, angles are measured around 
-        // the positive Z axis (counterclockwise, if Z is up)
-        // with zero angle being forward along the x axis
-        if(angle_offset<=180.0)angle_offset = -angle_offset;
-        else angle_offset = 360-angle_offset;
-
-        if (read_value == 0.0 || angle_offset<scan_min_angle || angle_offset> scan_max_angle)
-            scan_msg.ranges[i] = std::numeric_limits<float>::infinity();
-        else
-            scan_msg.ranges[i] = read_value;
-        scan_msg.intensities[i] = (float) (nodes[i].quality >> 2);
+    bool reverse_data = (!inverted && reversed) || (inverted && !reversed);
+    if (!reverse_data) {
+        for (size_t i = 0; i < node_count; i++) {
+            float read_value = (float) nodes[i].dist_mm_q2/4.0f/1000;
+            if (read_value == 0.0)
+                scan_msg.ranges[i] = std::numeric_limits<float>::infinity();
+            else
+                scan_msg.ranges[i] = read_value;
+            scan_msg.intensities[i] = (float) (nodes[i].quality >> 2);
+        }
+    } else {
+        for (size_t i = 0; i < node_count; i++) {
+            float read_value = (float)nodes[i].dist_mm_q2/4.0f/1000;
+            if (read_value == 0.0)
+                scan_msg.ranges[node_count-1-i] = std::numeric_limits<float>::infinity();
+            else
+                scan_msg.ranges[node_count-1-i] = read_value;
+            scan_msg.intensities[node_count-1-i] = (float) (nodes[i].quality >> 2);
+        }
     }
     
-#elif define slice_scan
+#elif defined slice_scan
     scan_msg.angle_min = scan_min_angle;
     scan_msg.angle_max = scan_max_angle;
 
@@ -135,6 +148,7 @@ void publish_scan(ros::Publisher *pub,
     scan_msg.range_min = 0.15;
     scan_msg.range_max = max_distance;//8.0;
 #else
+    //The following is a garbage.
     bool reversed = (angle_max > angle_min);
     if ( reversed ) {
       scan_msg.angle_min =  M_PI - angle_max;
@@ -425,8 +439,8 @@ int main(int argc, char * argv[]) {
 
         if (op_result == SL_RESULT_OK) {
             op_result = drv->ascendScanData(nodes, count);
-            float angle_min = DEG2RAD(0.0f);
-            float angle_max = DEG2RAD(360.0f);
+            float angle_min = DEG2RAD(3                                                                                                                                   60.0f);
+            float angle_max = DEG2RAD(0.0f);
             if (op_result == SL_RESULT_OK) {
                 if (angle_compensate) {
                     const int angle_compensate_nodes_count = 360*angle_compensate_multiple;
