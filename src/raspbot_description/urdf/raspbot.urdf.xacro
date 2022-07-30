@@ -118,7 +118,7 @@
         robot_namespace="$(arg robot_namespace)" />
 
     <joint name="base_lidar_joint" type="fixed">
-        <origin xyz="${lidar_x_offset} 0 ${lidar_vertical_offset}" rpy="0 0 0" />
+        <origin xyz="${lidar_x_offset} 0 ${lidar_vertical_offset}" rpy="0 0 ${M_PI}" />
         <parent link="base_link" />
         <child link="lidar_link" />
     </joint> 

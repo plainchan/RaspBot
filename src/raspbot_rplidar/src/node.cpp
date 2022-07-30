@@ -48,7 +48,7 @@ using namespace sl;
 
 ILidarDriver * drv = NULL;
 
-#define mask_scan
+// #define mask_scan
 
 void publish_scan(ros::Publisher *pub,
                   sl_lidar_response_measurement_node_hq_t *nodes,
@@ -68,7 +68,6 @@ void publish_scan(ros::Publisher *pub,
 #if defined mask_scan
     
     //不在角度范围之内的都设置成inf
- 
  bool reversed = (angle_max > angle_min);
     if ( reversed ) {
       scan_msg.angle_min =  M_PI - angle_max;
@@ -439,8 +438,8 @@ int main(int argc, char * argv[]) {
 
         if (op_result == SL_RESULT_OK) {
             op_result = drv->ascendScanData(nodes, count);
-            float angle_min = DEG2RAD(3                                                                                                                                   60.0f);
-            float angle_max = DEG2RAD(0.0f);
+            float angle_min = DEG2RAD(0.0f); 
+            float angle_max = DEG2RAD(360.0f);
             if (op_result == SL_RESULT_OK) {
                 if (angle_compensate) {
                     const int angle_compensate_nodes_count = 360*angle_compensate_multiple;
