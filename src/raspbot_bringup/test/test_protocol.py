@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
-import serialprotocol
+from raspbot_bringup.protocol.serialprotocol import SerialProtocol
 import serial,time
 
 
 if __name__ =='__main__':
 
     try:
-        sp = serial.Serial(port='/dev/ttyUSB0',baudrate=460800)
-        protocol_decode = serialprotocol.SerialProtocol()
+        sp = serial.Serial(port='/dev/ttyUSB0',baudrate=115200)
+        protocol_decode = SerialProtocol()
         try:
             while True:
                     count = sp.inWaiting()

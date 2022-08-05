@@ -10,3 +10,5 @@ class Robot_msgs():
         self.gyr = [0.0,0.0,0.0]
         self.mag = [0.0,0.0,0.0]
         self.elu = [0.0,0.0,0.0]
+        
+        

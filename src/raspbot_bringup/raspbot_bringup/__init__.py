@@ -1,3 +1,3 @@
 
-
-__all__ = ['crc8','crc16']
+import os,sys
+sys.path.append(os.path.dirname(__file__))
