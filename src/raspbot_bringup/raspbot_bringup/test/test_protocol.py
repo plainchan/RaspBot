@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 
-from raspbot_bringup.protocol.serialprotocol import SerialProtocol
+import sys
+sys.path.append('..')
+
+from protocol.serialprotocol import SerialProtocol
 import serial,time
 
 
@@ -16,6 +19,7 @@ if __name__ =='__main__':
                     msg = None
                     if count >0:
                         data = sp.read(count)
+                        print(data)
                     for byte in data:
                         msg = protocol_decode.parse_stream(byte)
                     if msg is not None:

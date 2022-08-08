@@ -62,7 +62,6 @@
 *****************************************************************************************/
 '''
 
-from ctypes.wintypes import BOOL
 import struct
 from crc import *
 
@@ -101,7 +100,7 @@ class SerialProtocol():
         self.__dpkgLen = 0
         self.__useIMUMag = useIMUMag
         
-    def setUseIMUMag(self,en:BOOL)->None:
+    def setUseIMUMag(self,en:bool)->None:
         self.__useIMUMag = en
         
     
@@ -203,6 +202,11 @@ class SerialProtocol():
             else:
                 i+=1
         return msg_raw
-
+    
+    
+    def packBytes(self,format,msg):
+        struct.calcsize(format)
+        bytes = struct.pack_into(format,msg)
+        return bytes
 
 
