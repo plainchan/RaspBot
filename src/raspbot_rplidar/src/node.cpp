@@ -50,14 +50,8 @@ ILidarDriver * drv = NULL;
 
 #define mask_scan
 
-    float scan_angele_range[2][2];
-    // if(min_angle*max_angle<0)
-    // {
-    //     scan_angele_range[0][0]
-    // }
-
-
-
+float none_scan_angle_min = 0.0;
+float none_scan_angle_max = 0.0;
 
 
 
@@ -111,8 +105,7 @@ void publish_scan(ros::Publisher *pub,
         for (size_t i = 0; i < node_count; i++) {
             float read_value = (float)nodes[i].dist_mm_q2/4.0f/1000;
             float angle_offset = i*scan_msg.angle_increment;
-            while((int)angle_offset>360)angle_offset-=360.0;
-            if (read_value == 0.0 || (angle_offset>=scan_angele_range[0][0] && angle_offset<scan_angele_range[0][1])  || (angle_offset>=scan_angele_range[1][0] && angle_offset<scan_angele_range[1][1]))
+            if (read_value == 0.0 || (angle_offset>none_scan_angle_min && angle_offset< none_scan_angle_max))
                 scan_msg.ranges[node_count-1-i] = std::numeric_limits<float>::infinity();
             else
                 scan_msg.ranges[node_count-1-i] = read_value;
@@ -336,11 +329,10 @@ int main(int argc, char * argv[]) {
     float scan_min_angle =  nh_private.param<float>("min_angle", -180.0);
     float scan_max_angle =  nh_private.param<float>("max_angle", 180.0);
 
-
-    scan_angele_range[0][0]=0.0;
-    scan_angele_range[0][1]=120.0;
-    scan_angele_range[1][0]=240.0;
-    scan_angele_range[1][1]=360.0;
+    //insure  min_angle < 0,max_angle >0 ,min_angle * max_angle <0
+    //or be error
+    none_scan_angle_min = DEG2RAD(-scan_min_angle);
+    none_scan_angle_max = DEG2RAD(360-scan_max_angle);
 
     if(channel_type == "udp"){
         nh_private.param<float>("scan_frequency", scan_frequency, 20.0);
