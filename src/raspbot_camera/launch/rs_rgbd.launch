@@ -117,7 +117,7 @@ Processing enabled by this node:
   <group ns="$(arg camera)">
 
     <!-- Launch the camera device nodelet-->
-    <include file="$(find realsense2_camera)/launch/includes/nodelet.launch.xml">
+    <include file="$(find raspbot_camera)/launch/includes/nodelet.launch.xml">
       <arg name="external_manager"         value="$(arg external_manager)"/>
       <arg name="manager"                  value="$(arg manager)"/>
       <arg name="tf_prefix"                value="$(arg tf_prefix)"/>

@@ -15,7 +15,7 @@
     <arg name="use_rtabmapviz"            default="false"/>
     
 
-    <include file="$(find realsense2_camera)/launch/rs_d400_and_t265.launch">
+    <include file="$(find raspbot_camera)/launch/rs_d400_and_t265.launch">
             <arg name="device_type_camera1"             value="$(arg device_type_camera1)"/>
             <arg name="device_type_camera2"             value="$(arg device_type_camera2)"/>
             <arg name="serial_no_camera1"               value="$(arg serial_no_camera1)"/>
