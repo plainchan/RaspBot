@@ -254,6 +254,7 @@ namespace raspbot
         if (loop_elapsed > 2./frequency_)
         {
             ROS_WARN_STREAM("Failed to meet update rate! Took " << std::setprecision(8) << loop_elapsed);
+            ROS_WARN_STREAM("run time: " << std::setprecision(8) << event.profile.last_duration);
         }
 
         // read and process serial buff
