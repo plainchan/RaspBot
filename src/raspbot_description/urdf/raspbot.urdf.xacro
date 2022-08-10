@@ -4,7 +4,7 @@
 
     <xacro:arg name="use_part_omni_model" default="true" />
     
-    <xacro:property name="M_PI" value="3.1415916"/>
+    <xacro:property name="M_PI" value="3.1415926535897931" />
 
     <!-- Base Size -->
     <xacro:property name="base_x_size" value="0.2" />
@@ -22,17 +22,22 @@
     <xacro:property name="wheel_vertical_offset" value="-0.0145" />
     <xacro:property name="wheel_horizontal_offset" value="0.068" />
 
-    <!-- omniWheel Mounting Positions -->
-    <xacro:property name="omniwheel_x_offset" value="-0.053" />
-    <xacro:property name="omniwheel_vertical_offset" value="-0.011" />
+    <!-- casterwheel Mounting Positions -->
+    <xacro:property name="casterwheel_x_offset" value="-0.053" />
+    <xacro:property name="casterwheel_vertical_offset" value="-0.011" />
     
     <!-- lidar Mounting Positions -->
     <xacro:property name="lidar_x_offset" value="0.06155" />
     <xacro:property name="lidar_vertical_offset" value="0.081" /> 
 
+    <!-- realsense D455  -->
+    <!-- Use the nominal extrinsics between camera frames if the calibrated extrinsics aren't being published. e.g. running the device in simulation  -->
+    <xacro:arg name="use_nominal_extrinsics" default="false"/>
+
     <xacro:include filename="$(find raspbot_description)/urdf/wheel.urdf.xacro" />
     <xacro:include filename="$(find raspbot_description)/urdf/rplidar.urdf.xacro" />
-    <xacro:include filename="$(find raspbot_description)/urdf/omniwheel.urdf.xacro" />
+    <xacro:include filename="$(find raspbot_description)/urdf/casterwheel.urdf.xacro" />
+    <xacro:include filename="$(find raspbot_description)/urdf/realsenseD455.urdf.xacro" />
 
     
 
@@ -102,15 +107,15 @@
         <axis xyz="0 -1 0" rpy="0 0 0" />
     </xacro:raspbot_wheel>
 
-    <!-- omniwheel -->
-    <xacro:raspbot_omniwheel />
+    <!-- casterwheel -->
+    <xacro:raspbot_casterwheel />
 
     <!-- <xacro:rplidar frame="lidar_link" topic="scan" robot_namespace="$(arg robot_namespace)"/> -->
     <xacro:rplidar
         frame="lidar_link" 
         topic="scan"
-        min_angle="${-M_PI}"
-        max_angle="${M_PI}"
+        min_angle="${-M_PI/2}"
+        max_angle="${M_PI/2}"
         min_range="0.15"
         max_range="12"
         sample_size="360"
@@ -130,6 +135,10 @@
         <parent link="base_link" />
         <child link="imu_link" />
     </joint>
+
+    <xacro:sensor_d455 parent="base_link" name="camera" use_nominal_extrinsics="$(arg use_nominal_extrinsics)">
+        <origin xyz="0.05 0 0.11" rpy="0 0 0"/>
+    </xacro:sensor_d455>
 
     <!--  gazebo  -->
 

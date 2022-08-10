@@ -1,0 +1,10 @@
+.vscode
+log
+install
+devel
+build
+src/CMakeLists.txt
+.catkin_workspace
+*.pyc
+__pycache__
+

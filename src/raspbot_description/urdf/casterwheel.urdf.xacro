@@ -1,9 +1,9 @@
-<robot name="raspbot_omniwheel" xmlns:xacro="http://ros.org/wiki/xacro"  >
+<robot name="raspbot_casterwheel" xmlns:xacro="http://ros.org/wiki/xacro"  >
 
-    <xacro:macro name="raspbot_omniwheel">
+    <xacro:macro name="raspbot_casterwheel">
 
-        <!-- omniwheel part-->
-        <link name="omniwheel_part1_link">
+        <!-- casterwheel part-->
+        <link name="casterwheel_part1_link">
             <inertial>
                 <mass value="0.016" />
                 <origin xyz="0 0 0" />
@@ -14,7 +14,7 @@
             <visual>
                 <origin xyz="0 0 0" rpy="0 0 0" />
                 <geometry>
-                    <mesh filename="package://raspbot_description/meshes/omniwheel_part1.dae" />
+                    <mesh filename="package://raspbot_description/meshes/casterwheel_part1.dae" />
                 </geometry>
             </visual>
             <collision>
@@ -24,13 +24,13 @@
                 </geometry>
             </collision>
         </link>
-        <joint name="base_omniwheel_part1_joint" type="fixed">
-            <origin xyz="${omniwheel_x_offset} 0 ${omniwheel_vertical_offset}" rpy="0 0 0" />
+        <joint name="base_casterwheel_part1_joint" type="fixed">
+            <origin xyz="${casterwheel_x_offset} 0 ${casterwheel_vertical_offset}" rpy="0 0 0" />
             <parent link="base_link" />
-            <child link="omniwheel_part1_link" />
+            <child link="casterwheel_part1_link" />
         </joint>
 
-        <link name="omniwheel_part2_link">
+        <link name="casterwheel_part2_link">
             <inertial>
                 <mass value="0.031" />
                 <origin xyz="-0.0035 0 0.007" />
@@ -44,7 +44,7 @@
             <visual>
                 <origin xyz="0 0 0" rpy="0 0 0" />
                 <geometry>
-                    <mesh filename="package://raspbot_description/meshes/omniwheel_part2.dae" />
+                    <mesh filename="package://raspbot_description/meshes/casterwheel_part2.dae" />
                 </geometry>
             </visual>
             <collision>
@@ -54,14 +54,14 @@
                 </geometry>
             </collision>
         </link>
-        <joint name="omniwheel_part1_2_joint" type="continuous">
+        <joint name="casterwheel_part1_2_joint" type="continuous">
             <origin xyz="0 0 -0.01638" rpy="0 0 0" />
-            <parent link="omniwheel_part1_link" />
-            <child link="omniwheel_part2_link" />
+            <parent link="casterwheel_part1_link" />
+            <child link="casterwheel_part2_link" />
             <axis xyz="0 0 1" rpy="0 0 0" />
         </joint>
 
-        <link name="omniwheel_part3_link">
+        <link name="casterwheel_part3_link">
             <inertial>
                 <mass value="0.02" />
                 <origin xyz="0 0 0" />
@@ -72,7 +72,7 @@
             <visual>
                 <origin xyz="0 0 0" rpy="0 0 0" />
                 <geometry>
-                    <mesh filename="package://raspbot_description/meshes/omniwheel_part3.dae" />
+                    <mesh filename="package://raspbot_description/meshes/casterwheel_part3.dae" />
                 </geometry>
             </visual>
             <collision>
@@ -82,14 +82,14 @@
                 </geometry>
             </collision>
         </link>
-        <joint name="omniwheel_part2_3_joint" type="continuous">
+        <joint name="casterwheel_part2_3_joint" type="continuous">
             <origin xyz="-0.015 0 -0.00718" rpy="0 0 0" />
-            <parent link="omniwheel_part2_link" />
-            <child link="omniwheel_part3_link" />
+            <parent link="casterwheel_part2_link" />
+            <child link="casterwheel_part3_link" />
             <axis xyz="0 1 0" rpy="0 0 0" />
         </joint>
 
-        <gazebo reference="omniwheel_part2_link">
+        <gazebo reference="casterwheel_part2_link">
 			<mu1 value="0.5"/>
 			<mu2 value="0.5"/>
 			<kp value="10000000.0" />
@@ -98,7 +98,7 @@
             
 		</gazebo>     
 
-        <gazebo reference="omniwheel_part3_link">
+        <gazebo reference="casterwheel_part3_link">
 			<mu1 value="1"/>
 			<mu2 value="1"/>
 			<kp value="10000000.0" />
